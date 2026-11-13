@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendário Escolar 2027 — Rede Municipal de Joinville</title>
+<style>
+/* ==================================================================
+   CALENDÁRIO ESCOLAR — REDE MUNICIPAL DE JOINVILLE
+   - A folha tem 284mm de largura (A3 retrato = 297mm - 2x6mm de margem)
+   - A impressão é forçada para A3 retrato em UMA página (@page abaixo)
+   - Se o conteúdo crescer, o JS reduz a escala automaticamente (--zimp)
+   - Na tela a folha é reduzida para caber na janela (--ztela)
+================================================================== */
+:root{--navy:#0b3a63;--laranja:#f5a01e;--linha:#1c2b36;--wd:#cfe2f3}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:#545a60;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+/* ---------- barra de ferramentas e ajuda (não saem na impressão) ---------- */
+.barra{max-width:1100px;margin:10px auto 0;background:#eef3f8;border:1px solid #c5d3e0;padding:8px 12px;font-size:13px}
+.barra .l1{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.barra button{padding:4px 12px;cursor:pointer;background:var(--navy);color:#fff;border:0;border-radius:3px;font-size:13px}
+.barra button.sec{background:#6b7a88}
+.barra button.imp{background:#c77800}
+.barra #fonte{color:#333}
+.warn{color:#b00020;font-size:12px;margin-top:6px;white-space:pre-line}
+#ajuda{max-width:1100px;margin:8px auto;background:#fffceb;border:1px solid #e0d68a;padding:10px 16px;font-size:13px;line-height:1.55}
+#ajuda h3{margin:8px 0 2px;font-size:14px;color:var(--navy)}
+#ajuda p,#ajuda ul{margin:3px 0}
+#ajuda code{background:#f2ecd4;padding:0 3px;border-radius:3px}
+@media screen{.stage{zoom:var(--ztela,1)}}
+.stage{padding:6px 0 14px}
+
+/* ---------- a folha (página A3) ---------- */
+.papel{width:284mm;min-height:406mm;background:#fff;margin:0 auto;box-shadow:0 3px 18px rgba(0,0,0,.45)}
+@media print{
+  @page{size:A3 portrait;margin:6mm}
+  body{background:#fff}
+  .no-print{display:none!important}
+  .stage{zoom:1;padding:0}
+  .papel{zoom:var(--zimp,1);box-shadow:none;min-height:0}
+}
+
+/* ---------- cabeçalho ---------- */
+.banner{display:flex;align-items:stretch;background:var(--laranja);border:0.8mm solid var(--navy);margin:3mm 3mm 2.5mm}
+.banner .ano{background:var(--navy);color:#fff;font-size:22pt;font-weight:bold;display:flex;align-items:center;padding:0 5mm}
+.banner .tt{flex:1;display:flex;flex-direction:column;justify-content:center;gap:1.2mm;padding:1.5mm 3mm;min-width:0}
+.banner h1{margin:0;color:#fff;font-size:15pt;line-height:1.12}
+.banner .sub{background:#fff;color:var(--navy);font-style:italic;font-weight:bold;font-size:9.5pt;padding:0.8mm 2.5mm;align-self:flex-start}
+
+/* ---------- grade de meses ---------- */
+.meses{display:grid;grid-template-columns:repeat(3,1fr);gap:2.2mm 3mm;margin:0 3mm}
+.mh{background:var(--navy);color:#fff;display:flex;justify-content:space-between;align-items:center;height:6.4mm;padding:0 1.2mm 0 1.6mm}
+.mh .nome{font-size:10.5pt;font-weight:bold;letter-spacing:.2mm}
+.mh .dl{display:flex;align-items:center;gap:1.2mm}
+.mh .rot{font-size:6.4pt;line-height:1.15}
+.mh .bx{background:var(--navy);color:#fff;border:0.25mm solid #fff;display:flex;flex-direction:column;padding:0.2mm 1.2mm;line-height:1.25}
+.mh .bx span{font-size:6.2pt}
+.mh .bx b{font-size:8pt}
+.wd{display:grid;grid-template-columns:repeat(7,1fr);background:var(--wd);border:0.3mm solid var(--linha);border-bottom:0}
+.wd div{text-align:center;font-size:7.5pt;font-weight:bold;color:var(--navy);padding:0.55mm 0;border-right:0.25mm solid var(--linha)}
+.wd div:last-child{border-right:0}
+.wd div.fim{color:#c00}
+.g{display:grid;grid-template-columns:repeat(7,1fr);border:0.3mm solid var(--linha);border-top:0}
+.d{position:relative;height:7mm;display:flex;justify-content:center;align-items:center;border-right:0.25mm solid var(--linha);border-bottom:0.25mm solid var(--linha)}
+.d:nth-child(7n){border-right:0}
+.d:nth-last-child(-n+7){border-bottom:0}
+.d .n{font-size:9pt;line-height:1}
+.d.we .n{color:#c00;font-weight:bold}
+.d.feriado .n{font-weight:bold}
+@media screen{.d:hover{outline:0.4mm solid var(--laranja);z-index:2;outline-offset:-0.4mm}}
+/* dia com 2+ categorias: número em negrito com leve halo para ler sobre as faixas */
+.d.multi .n{font-weight:bold;text-shadow:0 0 0.6mm rgba(255,255,255,.45)}
+
+/* lista de eventos de cada mês */
+.evwrap{height:24mm;overflow:hidden;margin:1.2mm 0.8mm 0}
+.ev-list{margin:0;padding:0;list-style:none;font-size:7pt;line-height:1.3}
+.ev-list li{margin:0 0 0.75mm;break-inside:avoid}
+.ev-list .dt{font-weight:bold}
+.ev-list.compacta{font-size:6.3pt;line-height:1.22}
+.ev-list.compacta li{margin-bottom:0.5mm}
+.ev-list.duas{columns:2;column-gap:2mm}
+.ev-list.micro{font-size:5.8pt;line-height:1.16}
+.ev-list.micro li{margin-bottom:0.3mm}
+.ev-list .maisl{color:#555;font-style:italic}
+
+/* ---------- rodapé: tabelas e legenda ---------- */
+.rodape{display:grid;grid-template-columns:0.75fr 1.05fr 1.4fr;gap:3mm;margin:2.5mm 3mm 0;align-items:start}
+.blocotit{background:var(--navy);color:#fff;font-size:7.6pt;font-weight:bold;text-align:center;padding:0.75mm;margin-bottom:0.8mm}
+table{border-collapse:collapse;width:100%;font-size:7pt}
+th,td{border:0.25mm solid var(--linha);padding:0.35mm 1.1mm;text-align:center}
+th{background:var(--navy);color:#fff}
+td.t{background:#ffff66;font-weight:bold}
+.leg{list-style:none;margin:0;padding:0;border:0.25mm solid var(--linha);font-size:6.4pt;columns:2;column-gap:2.5mm}
+.leg li{display:flex;align-items:center;gap:1.4mm;padding:0.4mm 1.2mm;border-bottom:0.2mm solid #ddd;text-align:left;break-inside:avoid}
+.leg li:last-child{border-bottom:0}
+.leg i{width:5mm;height:3mm;flex:none;border:0.2mm solid rgba(0,0,0,.4);border-radius:0.4mm}
+.leg li.expl{display:block;font-size:6.1pt;color:#333;line-height:1.3;column-span:all;margin-top:0.6mm;border-top:0.2mm solid #ddd;padding-top:0.8mm}
+.leg .fdem{display:inline-block;width:8mm;height:3.6mm;border:0.2mm solid rgba(0,0,0,.4);vertical-align:middle;margin-right:1.6mm}
+.chk{margin:2.2mm 3mm 0;font-size:8pt;font-weight:bold;padding:1.1mm 2mm;border:0.35mm solid;text-align:center}
+.chk.ok{color:#176d2a;background:#eaf6ea;border-color:#176d2a}
+.chk.bad{color:#b00020;background:#fdecec;border-color:#b00020}
+</style>
+</head>
+<body>
+
+<div class="barra no-print">
+  <div class="l1">
+    <strong>Calendário Escolar</strong>
+    <span id="fonte">carregando…</span>
+    <button onclick="init()" title="Ler novamente a planilha configurada">Recarregar planilha</button>
+    <button class="sec" onclick="document.getElementById('arq').click()" title="Testar um CSV salvo no computador">Carregar CSV…</button>
+    <input type="file" id="arq" accept=".csv,text/csv" hidden>
+    <button class="sec" onclick="baixarExemplo()" title="Baixar o CSV de exemplo (calendário 2027)">Baixar CSV de exemplo</button>
+    <button class="imp" onclick="window.print()">Imprimir / PDF (A3 retrato)</button>
+    <button class="sec" onclick="var a=document.getElementById('ajuda');a.hidden=!a.hidden">Ajuda</button>
+  </div>
+  <div class="warn" id="avisos"></div>
+</div>
+
+<div id="ajuda" class="no-print" hidden>
+  <h3>Conectar ao Supabase (banco de dados)</h3>
+  <p>Com o projeto Supabase criado e o script <code>supabase_fase1.sql</code> executado, preencha <code>CONFIG.supabase</code> com a <b>URL</b> e a chave <b>anon public</b> (Settings &gt; API do projeto). A página passa a ler as tabelas <code>eventos</code>, <code>categorias</code> e <code>configuracoes</code>: visitantes têm só leitura (RLS); a escrita será liberada na fase de login admin. Enquanto esses campos estiverem vazios, a página usa os dados de exemplo embutidos.</p>
+  <h3>Conectar à planilha Google</h3>
+  <p>Na planilha: <b>Arquivo &gt; Compartilhar &gt; Publicar na web</b> &gt; escolha a aba de <b>eventos</b> &gt; formato <b>CSV</b> &gt; Publicar. Copie o link gerado e cole em <code>CONFIG.csvUrl</code> (no código deste arquivo) ou abra esta página com <code>?csv=LINK</code> no endereço.</p>
+  <h3>Colunas esperadas na aba de eventos</h3>
+  <ul>
+    <li><code>inicio</code> (obrigatória): aceita <code>2027-03-05</code>, <code>05/03/2027</code> ou várias datas assim: <code>"09/04,10/04,16/04"</code> (útil para eventos em dias alternados, como a Mostra Dança na Escola).</li>
+    <li><code>fim</code> (opcional): data final de eventos que duram vários dias. Vazio = evento de 1 dia. Eventos de período não pintam sábado e domingo (mesmo atravessando o fim de semana); datas únicas que caem no fim de semana continuam pintadas.</li>
+    <li><code>titulo</code>: texto mostrado na lista do mês e ao passar o mouse.</li>
+    <li><code>categoria</code>: deve existir na legenda (ex.: <code>feriado</code>, <code>avaliacao</code>). Escrevendo o nome completo também funciona (ex.: "Feriado Nacional"). Categoria nova recebe cor automática — para fixar a cor, adicione uma coluna <code>cor</code> com um código hex (ex.: <code>#ff8800</code>) ou cadastre em <code>CATS</code> no código.</li>
+    <li><code>etapa</code>: <code>EI</code>, <code>EF</code> ou vazio (para ambas). A etapa aparece na lista de eventos do mês (entre parênteses) e ao passar o mouse sobre o dia.</li>
+    <li><code>letivo</code>: vazio = sim; <code>n</code> = não é dia letivo.</li>
+  </ul>
+  <p>Dias com 2 ou mais eventos são desenhados com <b>faixas diagonais</b> que preenchem a célula inteira, uma faixa na cor de cada categoria — como na planilha manual, mas sem limite de cores e sem sobreposição de bordas. Dias com feriado, recesso, ponto facultativo ou início/término continuam com fundo cheio na cor dessas categorias: períodos de eventos não pintam esses dias (e períodos também não pintam sábado e domingo).</p>
+  <p>Feriado, ponto facultativo e recesso não contam como dias letivos (a conferência do rodapé considera isso).</p>
+  <h3>Imprimir em 1 página A3 retrato</h3>
+  <p>Ctrl+P &gt; papel <b>A3</b> &gt; orientação <b>Retrato</b> &gt; margens <b>Padrão</b> &gt; marque <b>Gráficos de fundo</b> e desmarque <b>Cabeçalhos e rodapés</b>. Se o conteúdo exceder 1 página, ele é reduzido automaticamente (um aviso aparece na barra acima).</p>
+  <h3>Publicar (GitHub Pages)</h3>
+  <p>Salve este arquivo como <code>index.html</code> em um repositório e ative o Pages (Settings &gt; Pages). Qualquer pessoa acessa pelo link. A ordem de leitura dos dados é: <b>1º</b> <code>?csv=LINK</code> (se presente na barra de endereço), <b>2º</b> Supabase (se <code>CONFIG.supabase</code> estiver preenchido), <b>3º</b> <code>CONFIG.csvUrl</code> ou dados de exemplo embutidos — sempre atualizados ao recarregar a página.</p>
+</div>
+
+<div class="stage">
+  <div class="papel" id="papel">
+    <div class="banner">
+      <div class="ano" id="ano">2027</div>
+      <div class="tt">
+        <h1 id="titulo">Calendário da Rede Municipal de Ensino de Joinville</h1>
+        <div class="sub" id="subtitulo">Ensino Fundamental e Educação Infantil</div>
+      </div>
+    </div>
+    <div class="meses" id="meses"></div>
+    <div class="rodape" id="rodape"></div>
+    <div class="chk" id="chk"></div>
+  </div>
+</div>
+
+<script>
+/* ============================ CONFIGURAÇÃO ============================
+   csvUrl: link da aba de eventos publicada como CSV
+   (Arquivo > Compartilhar > Publicar na web > CSV).
+   Também aceita ?csv=URL e ?ano=2028 na barra de endereço.
+   Vazio = usa os dados de exemplo embutidos abaixo. */
+const CONFIG = {
+  ano: 2027,
+  titulo: "Calendário da Rede Municipal de Ensino de Joinville",
+  subtitulo: "Ensino Fundamental e Educação Infantil",
+  csvUrl: "",
+  /* Fase 1 — Supabase (banco de dados). Preencha com os valores de
+     Settings > API do projeto: url = "https://xxxx.supabase.co"
+     e key = chave "anon public" (é pública por design; a segurança de
+     escrita é garantida pelas políticas RLS criadas no script SQL).
+     Enquanto estiver vazio, a página usa os dados de exemplo embutidos. */
+  supabase: { url: "", key: "" },
+  semestresEI: [["1º Semestre","2027-02-10","2027-07-16"],["2º Semestre","2027-08-02","2027-12-21"]],
+  trimestresEF: [["1º Trimestre","2027-02-10","2027-05-14"],["2º Trimestre","2027-05-17","2027-09-17"],["3º Trimestre","2027-09-20","2027-12-21"]]
+};
+
+/* Categorias = legenda. Formato: chave: [nome completo, cor].
+   'feriado', 'facultativo' e 'recesso' NÃO contam como dia letivo.
+   Feriado, recesso, início/término e ponto facultativo pintam o dia inteiro
+   (categorias "fortes"): períodos de eventos não pintam esses dias. */
+const CATS = {
+  inicio_fim:  ["Início e Término do Ano Letivo para os Alunos","#38761d"],
+  reuniao:     ["Reunião Pedagógica / Parada Formação","#e69138"],
+  avaliacao:   ["Aplicação das Avaliações Diagnósticas e Formativas","#00ffff"],
+  eja:         ["Avaliações EJA e Tempo de Avançar","#9900ff"],
+  preconselho: ["Pré-Conselho EF","#b45f06"],
+  conselho_ef: ["Conselho de Classe - Ensino Fundamental","#ffff00"],
+  semana_ei:   ["Semana da Educação Infantil - Sem Dispensa de Alunos","#6fa8dc"],
+  conselho_ei: ["Conselho de Classe - Educação Infantil","#b6d7a8"],
+  seminarios:  ["Seminários, Feiras e Festivais","#dd7e6b"],
+  feriado:     ["Feriado","#0c0c5c"],
+  recesso:     ["Recesso Escolar","#ea9999"],
+  facultativo: ["Ponto Facultativo","#6d9eeb"],
+  retorno_dir: ["Retorno de Diretores e Auxiliares de Direção","#fff2cc"],
+  fomento:     ["Semana de Fomento ao Dia dos Pais / Mães","#cccccc"]
+};
+
+/* Nomes que a planilha pode usar, aceitos como apelidos das categorias acima */
+const ALIASES = {
+  inicio_e_termino_do_ano_letivo_para_os_alunos:"inicio_fim",
+  reuniao_pedagogica_parada_formacao:"reuniao",
+  aplicacao_das_avaliacoes_diagnosticas_e_formativas:"avaliacao",
+  avaliacoes_eja_e_tempo_de_avancar:"eja",
+  pre_conselho_ef:"preconselho",
+  conselho_de_classe_ensino_fundamental:"conselho_ef",
+  semana_da_educacao_infantil_sem_dispensa_de_alunos:"semana_ei",
+  conselho_de_classe_educacao_infantil:"conselho_ei",
+  seminarios_feiras_e_festivais:"seminarios",
+  feriado_nacional:"feriado",
+  recesso_escolar:"recesso",
+  ponto_facultativo:"facultativo",
+  retorno_de_diretores_e_auxiliares_de_direcao:"retorno_dir",
+  semana_de_fomento_ao_dia_dos_pais_maes:"fomento"
+};
+
+const NAO_LETIVO = ["feriado","facultativo","recesso"];
+/* Categorias que pintam o dia inteiro, em ordem de prioridade quando há mais de uma.
+   Ponto facultativo entra nessa regra: nenhum período de evento pinta um dia facultativo. */
+const FORTES = ["feriado","recesso","inicio_fim","facultativo"];
+const MESES = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
+const SEM = ["D","S","T","Q","Q","S","S"];
+const PALETA_AUTO = ["#4e73a6","#c0504d","#9bbb59","#8064a2","#4bacc6","#f79646","#2c4d75","#8fbc8f","#cd8165","#7f7f7f"];
+
+/* Dados de exemplo = calendário 2027 transcrito do PDF oficial (78 eventos).
+   As contagens batem com as tabelas do PDF: E.I. 107+94 = E.F. 64+76+61 = 201 dias letivos. */
+const SAMPLE = `inicio,fim,titulo,categoria,etapa,letivo
+2027-01-01,,Confraternização Universal,feriado,,
+2027-02-02,,Retorno de Diretores,retorno_dir,,
+2027-02-03,2027-02-05,Retorno de Professores: Reunião Pedagógica e Formação,reuniao,,
+2027-02-08,2027-02-09,Ponto Facultativo de Carnaval,facultativo,,
+2027-02-10,,Início do Ano Letivo para os Estudantes,inicio_fim,,
+2027-02-22,2027-02-26,Avaliações Diagnósticas,avaliacao,,
+2027-02-22,2027-03-03,Avaliações do Pacto pela Alfabetização 1º Ano,avaliacao,EF,
+2027-03-08,,Ponto Facultativo,facultativo,,
+2027-03-09,,Feriado: Aniversário de Joinville,feriado,,
+2027-03-15,2027-03-19,Avaliação EJA e Tempo de Avançar,eja,EF,
+2027-03-15,2027-03-25,1ª Avaliação de Fluência de Leitura do 2º Ano,avaliacao,EF,
+2027-03-23,,XIII Seminário Municipal de Educação para Promoção da Igualdade Racial - Sem Dispensa de Alunos,seminarios,,
+2027-03-26,,Feriado Nacional: Sexta-feira Santa,feriado,,
+2027-03-29,2027-04-02,Avaliações EJA,eja,EF,
+2027-04-13,2027-04-23,Avaliações do Pacto pela Alfabetização 1º Ano,avaliacao,EF,
+2027-04-14,2027-04-20,1ª Avaliação para Aprendizagem,avaliacao,,
+2027-04-21,,Feriado Nacional: Dia de Tiradentes,feriado,,
+2027-04-26,2027-04-30,Semana de Pré-Conselho EF: Sem Dispensa de Alunos,preconselho,EF,
+2027-05-01,,Feriado Nacional: Dia do Trabalhador,feriado,,
+2027-05-03,2027-05-07,Semana de Fomento ao Dia das Mães,fomento,,
+2027-05-09,,Dia das Mães,fomento,,
+2027-05-11,,Conselho de Classe - Anos Iniciais - Ensino Fundamental,conselho_ef,EF,
+2027-05-12,,Conselho de Classe - Anos Finais - Ensino Fundamental,conselho_ef,EF,
+2027-05-27,,Feriado: Corpus Christi,feriado,,
+2027-05-28,,Ponto Facultativo,facultativo,,
+2027-06-09,,Mostra Dança na Escola,seminarios,,
+2027-06-10,,Mostra Dança na Escola,seminarios,,
+2027-06-14,2027-06-18,Período a Escolher - Conselho de Classe da Educação Infantil,conselho_ei,EI,
+2027-06-15,,Seminário da Educação Ambiental,seminarios,,
+2027-06-16,,Mostra Dança na Escola,seminarios,,
+2027-06-17,,Mostra Dança na Escola,seminarios,,
+2027-06-21,,Reunião Pedagógica - Anos Iniciais,reuniao,EF,
+2027-06-22,,Reunião Pedagógica - Anos Finais,reuniao,EF,
+2027-06-23,,Mostra Dança na Escola,seminarios,,
+2027-06-24,,Mostra Dança na Escola,seminarios,,
+2027-06-29,,Seminário da Educação de Jovens e Adultos,seminarios,,
+2027-06-30,,Mostra Dança na Escola,seminarios,,
+2027-07-01,,Mostra Dança na Escola,seminarios,,
+2027-07-05,,Abertura da V Mostra de Arte - Sem Dispensa de Alunos,seminarios,,
+2027-07-07,,XXVII Feira Municipal de Matemática - Sem Dispensa de Alunos,seminarios,,
+2027-07-19,2027-07-30,Recesso Escolar,recesso,,
+2027-08-02,,Retorno dos Alunos - 2º Semestre Letivo,inicio_fim,,
+2027-08-03,2027-08-06,Semana de Fomento ao Dia dos Pais,fomento,,
+2027-08-08,,Dia dos Pais,fomento,,
+2027-08-12,,Reunião Pedagógica - Anos Iniciais,reuniao,EF,
+2027-08-13,,Reunião Pedagógica - Anos Iniciais,reuniao,EF,
+2027-08-21,,Mostra de Fanfarras,seminarios,,
+2027-08-23,2027-08-27,Semana Nacional da Educação Infantil - Sem Dispensa de Alunos,semana_ei,EI,
+2027-08-23,2027-08-27,Avaliações EJA,eja,EF,
+2027-08-23,2027-08-27,Semana de Pré-Conselho EF - Sem Dispensa de Alunos,preconselho,EF,
+2027-08-28,,Campeonato Joinvilense de Robótica,seminarios,,
+2027-08-30,2027-09-03,2ª Avaliação para Aprendizagem,avaliacao,,
+2027-08-30,2027-09-03,2ª Avaliação Diagnóstica EJA e Tempo de Avançar,eja,EF,
+2027-08-30,2027-09-10,Avaliações do Pacto pela Alfabetização 1º Ano,avaliacao,EF,
+2027-09-06,,Ponto Facultativo,facultativo,,
+2027-09-07,,Feriado Nacional: Dia da Independência do Brasil,feriado,,
+2027-09-14,,Conselho de Classe - Anos Finais - Ensino Fundamental,conselho_ef,EF,
+2027-09-15,,Conselho de Classe - Anos Iniciais - Ensino Fundamental,conselho_ef,EF,
+2027-09-29,,Avaliação para Fluência Leitora,avaliacao,EF,
+2027-10-01,2027-10-20,Avaliação SOMATIVA,avaliacao,,
+2027-10-11,,Ponto Facultativo,facultativo,,
+2027-10-12,,Feriado Nacional: Dia de Nossa Senhora Aparecida,feriado,,
+2027-10-29,,Ponto Facultativo - Comemoração do Dia do Servidor Público dia 28,facultativo,,
+2027-11-01,,Ponto Facultativo,facultativo,,
+2027-11-02,,Feriado Nacional: Dia de Finados,feriado,,
+2027-11-08,2027-11-12,3ª Avaliação para Aprendizagem,avaliacao,,
+2027-11-08,2027-11-19,Avaliações do Pacto pela Alfabetização 1º Ano,avaliacao,EF,
+2027-11-15,,Feriado Nacional: Proclamação da República,feriado,,
+2027-11-16,2027-11-19,Período a Escolher - Conselho de Classe da Educação Infantil,conselho_ei,EI,
+2027-11-20,,Feriado Nacional: Dia da Consciência Negra,feriado,,
+2027-11-22,2027-11-26,Semana de Pré-Conselho EF - Sem Dispensa de Alunos,preconselho,EF,
+2027-11-24,,Feira de Conhecimento do Trilhas,seminarios,,
+2027-11-27,,Maratona Lab_Code,seminarios,,
+2027-12-02,,Conselho de Classe - Anos Iniciais - Ensino Fundamental,conselho_ef,EF,
+2027-12-03,,Conselho de Classe - Anos Finais - Ensino Fundamental,conselho_ef,EF,
+2027-12-21,,Encerramento do Ano Letivo,inicio_fim,,
+2027-12-22,2027-12-31,Ponto Facultativo,facultativo,,
+2027-12-25,,Feriado Nacional: Natal,feriado,,`;
+
+/* ============================ utilidades ============================ */
+const norm = s => (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
+const key = d => d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate();
+const deKey = v => new Date(Math.floor(v/10000), Math.floor(v/100)%100-1, v%100);
+const proximo = v => { const d = deKey(v); d.setDate(d.getDate()+1); return key(d); };
+const p2 = n => String(n).padStart(2,"0");
+const lum = hex => { const n = parseInt(hex.slice(1),16); return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))/255; };
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+/* Converte texto em chave de data (aaaammdd). Aceita 2027-03-05, 05/03/2027, 05/03 e "05/03,06/03 e 10/03" */
+function pd(s, anoPadrao){
+  s = (s||"").trim(); let m;
+  if (m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)) return +m[1]*10000 + +m[2]*100 + +m[3];
+  if (m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)){ const a = +m[3] < 100 ? 2000 + +m[3] : +m[3]; return a*10000 + +m[2]*100 + +m[1]; }
+  if (m = s.match(/^(\d{1,2})\/(\d{1,2})$/)) return anoPadrao*10000 + +m[2]*100 + +m[1];
+  return null;
+}
+function extrairDatas(raw, anoPadrao){
+  if (!raw || !raw.trim()) return [];
+  const out = new Set();
+  raw.split(/\s*[;,]\s*|\s+e\s+/).forEach(t => { const v = pd(t, anoPadrao); if (v) out.add(v); });
+  return [...out].sort();
+}
+
+/* Leitor de CSV com suporte a aspas, vírgula ou ponto-e-vírgula e BOM */
+function parseCSV(t){
+  t = t.replace(/^\uFEFF/, "");
+  const linhas = []; let r = [], c = "", q = false;
+  const delim = (t.split("\n")[0].match(/;/g)||[]).length > (t.split("\n")[0].match(/,/g)||[]).length ? ";" : ",";
+  for (let i = 0; i < t.length; i++){
+    const ch = t[i];
+    if (q){ if (ch === '"'){ if (t[i+1] === '"'){ c += '"'; i++; } else q = false; } else c += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === delim){ r.push(c); c = ""; }
+    else if (ch === "\n" || ch === "\r"){ if (ch === "\r" && t[i+1] === "\n") i++; r.push(c); linhas.push(r); r = []; c = ""; }
+    else c += ch;
+  }
+  if (c || r.length){ r.push(c); linhas.push(r); }
+  return linhas.filter(x => x.some(y => y.trim()));
+}
+
+/* ============================ dados ============================ */
+let EVENTOS = [], AVISOS = [], INI = 0, FIM = 0;
+const POR_DIA = new Map();
+
+function buildEventos(csv){
+  AVISOS = []; EVENTOS = []; POR_DIA.clear();
+  const linhas = parseCSV(csv);
+  if (!linhas.length) throw new Error("CSV vazio");
+  const cab = linhas.shift().map(norm);
+  const cIni = cab.indexOf("inicio"), cFim = cab.indexOf("fim"), cTit = cab.indexOf("titulo"),
+        cCat = cab.indexOf("categoria"), cEtp = cab.indexOf("etapa"), cLet = cab.indexOf("letivo"), cCor = cab.indexOf("cor");
+  if (cIni < 0) throw new Error('Coluna "inicio" não encontrada no CSV');
+  const novas = new Set();
+  linhas.forEach((r, i) => {
+    const g = n => { const j = cab.indexOf(n); return j >= 0 ? (r[j]||"").trim() : ""; };
+    const datas = extrairDatas(r[cIni], CONFIG.ano);
+    const titulo = (cTit >= 0 ? (r[cTit]||"").trim() : "") || "(sem título)";
+    if (!datas.length){ AVISOS.push(`Linha ${i+2}: data de início inválida ("${r[cIni]||""}") em "${titulo}"`); return; }
+    const cru = norm(g("categoria"));
+    let cat = CATS[cru] ? cru : (ALIASES[cru] || cru);
+    if (!CATS[cat]){
+      const corCol = cCor >= 0 ? (r[cCor]||"").trim() : "";
+      const cor = /^#[0-9a-f]{6}$/i.test(corCol) ? corCol : PALETA_AUTO[Object.keys(CATS).length % PALETA_AUTO.length];
+      CATS[cat] = [g("categoria"), cor];
+      if (!novas.has(cat)){ novas.add(cat); AVISOS.push(`Categoria nova "${g("categoria")}" recebeu cor automática — ajuste em CATS se quiser`); }
+    }
+    const eRaw = g("etapa").toUpperCase().replace(/\./g,"");
+    const etapa = eRaw === "EI" ? "EI" : eRaw === "EF" ? "EF" : "ambos";
+    if (eRaw && !"EI EF AMBOS TODOS TODAS".split(" ").includes(eRaw))
+      AVISOS.push(`Linha ${i+2}: etapa "${g("etapa")}" não reconhecida (use EI, EF ou vazio) em "${titulo}"`);
+    const letivo = !/^(n|nao|não|false|f|0|no)$/i.test(g("letivo"));
+    const add = (ini, fim) => {
+      EVENTOS.push({ini, fim, titulo, cat, etapa, letivo});
+      if (fim < CONFIG.ano*10000+101 || ini > CONFIG.ano*10000+1231)
+        AVISOS.push(`Linha ${i+2}: "${titulo}" (${pd2br(ini)}) está fora do ano ${CONFIG.ano} e não será exibido`);
+    };
+    if (datas.length > 1) datas.forEach(v => add(v, v));
+    else {
+      const a = datas[0];
+      const fs = extrairDatas(cFim >= 0 ? r[cFim] : "", CONFIG.ano);
+      add(a, fs.length ? Math.max(a, fs[0]) : a);
+    }
+  });
+  EVENTOS.sort((a,b) => a.ini - b.ini || a.fim - b.fim);
+  /* Eventos de período (ini diferente de fim) só marcam dias de semana: sábado e
+     domingo ficam sem cor, pois o evento não ocorre no fim de semana. Datas únicas
+     (ini = fim, inclusive as vindas de várias datas na coluna inicio) marcam qualquer dia. */
+  EVENTOS.forEach(e => { for (let v = e.ini; v <= e.fim; v = proximo(v)){
+    const w = deKey(v).getDay();
+    if (e.ini !== e.fim && (w === 0 || w === 6)) continue;
+    if (!POR_DIA.has(v)) POR_DIA.set(v, []); POR_DIA.get(v).push(e); } });
+  const ife = EVENTOS.filter(e => e.cat === "inicio_fim");
+  if (ife.length){ INI = Math.min(...ife.map(e => e.ini)); FIM = Math.max(...ife.map(e => e.fim)); }
+  else { INI = CONFIG.ano*10000+101; FIM = CONFIG.ano*10000+1231; AVISOS.push("Nenhum evento da categoria inicio_fim — assumido o ano civil inteiro"); }
+  if (!EVENTOS.length) throw new Error("Nenhum evento válido no CSV");
+}
+const pd2br = v => `${p2(v%100)}/${p2(Math.floor(v/100)%100)}`;
+
+/* ============================ dias letivos ============================ */
+function isLetivo(v, etapa){
+  if (v < INI || v > FIM) return false;
+  const w = deKey(v).getDay();
+  if (w === 0 || w === 6) return false;
+  const evs = POR_DIA.get(v) || [];
+  return !evs.some(e => (NAO_LETIVO.includes(e.cat) || !e.letivo) && (e.etapa === "ambos" || e.etapa === etapa));
+}
+function contarMes(m, etapa){
+  const nDias = new Date(CONFIG.ano, m+1, 0).getDate();
+  let n = 0;
+  for (let d = 1; d <= nDias; d++) if (isLetivo(key(new Date(CONFIG.ano, m, d)), etapa)) n++;
+  return n;
+}
+function contarPeriodo(i, f, etapa){
+  let n = 0;
+  for (let v = i; v <= f; v = proximo(v)) if (isLetivo(v, etapa)) n++;
+  return n;
+}
+
+/* ============================ desenho ============================ */
+function celula(v, m){
+  const d = deKey(v), dia = d.getDate(), w = d.getDay();
+  const evs = POR_DIA.get(v) || [];
+  const cats = [...new Set(evs.map(e => e.cat))];
+  const forte = FORTES.find(c => cats.includes(c));
+  let cls = "d" + ((w === 0 || w === 6) ? " we" : ""), bg = "", corTxt = "";
+  if (evs.length){
+    if (forte){ bg = CATS[forte][1]; }
+    else if (cats.length === 1){ bg = CATS[cats[0]][1]; }
+    else {
+      /* 2 ou mais categorias no mesmo dia: faixas diagonais preenchem a célula
+         inteira, uma na cor de cada categoria (mesma ideia da planilha manual) */
+      const cores = cats.map(c => CATS[c][1]);
+      const p = 100 / cores.length;
+      bg = "linear-gradient(135deg," + cores.map((c,i) => `${c} ${(i*p).toFixed(3)}% ${((i+1)*p).toFixed(3)}%`).join(",") + ")";
+      cls += " multi";
+    }
+    if (forte === "feriado") cls += " feriado";
+  }
+  if (bg){
+    const l = cls.includes("multi") ? cats.reduce((s,c) => s + lum(CATS[c][1]), 0) / cats.length : lum(bg);
+    corTxt = l < 0.46 ? "#fff" : "#111";
+  }
+  const tip = evs.length ? esc(`${p2(dia)}/${p2(m+1)}/${CONFIG.ano}\n` + evs.map(e =>
+    `- ${e.titulo} [${CATS[e.cat][0]}${e.etapa === "ambos" ? "" : e.etapa === "EI" ? " - E.I." : " - E.F."}${e.letivo ? "" : " - não letivo"}]`).join("\n")) : "";
+  return `<div class="${cls}"${bg ? ` style="background:${bg}"` : ""} title="${tip}"><span class="n"${corTxt ? ` style="color:${corTxt}"` : ""}>${dia}</span></div>`;
+}
+
+function fmtData(a, b){
+  const A = deKey(a), B = deKey(b);
+  if (a === b) return p2(A.getDate());
+  if (A.getFullYear() !== B.getFullYear()) return `${p2(A.getDate())}/${p2(A.getMonth()+1)}/${A.getFullYear()} a ${p2(B.getDate())}/${p2(B.getMonth()+1)}/${B.getFullYear()}`;
+  return A.getMonth() === B.getMonth() ? `${p2(A.getDate())} a ${p2(B.getDate())}` : `${p2(A.getDate())} a ${p2(B.getDate())}/${p2(B.getMonth()+1)}`;
+}
+function listaDatas(arr){
+  const ds = arr.map(v => p2(deKey(v).getDate()));
+  return ds.length <= 1 ? ds.join("") : ds.slice(0, -1).join(", ") + " e " + ds[ds.length-1];
+}
+function listarMes(m){
+  const evs = EVENTOS.filter(e => { const A = deKey(e.ini); return A.getMonth() === m && A.getFullYear() === CONFIG.ano; });
+  const grupos = [];
+  evs.forEach(e => {
+    const g = grupos.find(x => x.cat === e.cat && x.titulo === e.titulo && x.etapa === e.etapa && x.fim === x.ini && e.fim === e.ini);
+    if (g) g.datas.push(e.ini); else grupos.push({...e, datas: [e.ini]});
+  });
+  grupos.sort((a,b) => a.ini - b.ini);
+  return grupos.map(g => {
+    const dt = g.datas.length > 1 ? listaDatas(g.datas) : fmtData(g.ini, g.fim);
+    const sufx = g.etapa === "ambos" ? "" : ` <b>(${g.etapa === "EI" ? "E.I." : "E.F."})</b>`;
+    const nl = g.letivo ? "" : " <b>(não letivo)</b>";
+    return `<li><span class="dt">${dt}</span> - ${esc(g.titulo)}${sufx}${nl}</li>`;
+  }).join("");
+}
+
+function mesHTML(m, cnt){
+  const nDias = new Date(CONFIG.ano, m+1, 0).getDate();
+  const blanks = new Date(CONFIG.ano, m, 1).getDay();
+  let cells = "";
+  for (let i = 0; i < blanks; i++) cells += `<div class="d"></div>`;
+  for (let d = 1; d <= nDias; d++) cells += celula(key(new Date(CONFIG.ano, m, d)), m);
+  for (let i = blanks + nDias; i < 42; i++) cells += `<div class="d"></div>`;
+  const box = (cnt.EI || cnt.EF) ? `<span class="dl"><span class="rot">Dias<br>letivos</span><span class="bx"><span>E.I. <b>${cnt.EI}</b></span><span>E.F. <b>${cnt.EF}</b></span></span></span>` : "";
+  return `<section><div class="mh"><span class="nome">${MESES[m]}</span>${box}</div>
+  <div class="wd">${SEM.map((x,i) => `<div${(i === 0 || i === 6) ? ' class="fim"' : ""}>${x}</div>`).join("")}</div>
+  <div class="g">${cells}</div>
+  <div class="evwrap"><ul class="ev-list">${listarMes(m)}</ul></div></section>`;
+}
+
+function rodape(porMes){
+  const mesCurto = m => MESES[m].charAt(0) + MESES[m].slice(1).toLowerCase();
+  const linhas = MESES.map((_, m) => m).filter(m => porMes[m].EI || porMes[m].EF)
+    .map(m => `<tr><td>${mesCurto(m)}</td><td>${porMes[m].EI}</td><td>${porMes[m].EF}</td></tr>`).join("");
+  const totEI = porMes.reduce((s,x) => s+x.EI, 0), totEF = porMes.reduce((s,x) => s+x.EF, 0);
+  const br = v => pd2br(v);
+  const per = [
+    ...CONFIG.semestresEI.map(([n,i,f]) => ({n: n+" (E.I.)", pi: pd(i), pf: pd(f), d: contarPeriodo(pd(i), pd(f), "EI")})),
+    ...CONFIG.trimestresEF.map(([n,i,f]) => ({n: n+" (E.F.)", pi: pd(i), pf: pd(f), d: contarPeriodo(pd(i), pd(f), "EF")}))
+  ];
+  const linhasPer = per.map(x => `<tr><td style="text-align:left">${x.n}</td><td>${br(x.pi)} a ${br(x.pf)}</td><td class="t">${x.d}</td></tr>`).join("");
+  const leg = Object.values(CATS).map(([n,c]) => `<li><i style="background:${c}"></i>${n}</li>`).join("");
+  return `<div><div class="blocotit">Dias letivos por mês</div>
+  <table><tr><th style="width:34%">Mês</th><th>E.I.</th><th>E.F.</th></tr>${linhas}
+  <tr><td><b>Total</b></td><td class="t">${totEI}</td><td class="t">${totEF}</td></tr></table></div>
+  <div><div class="blocotit">Períodos letivos</div>
+  <table><tr><th style="width:44%">Período</th><th>Calendário</th><th>Dias</th></tr>${linhasPer}</table></div>
+  <div><div class="blocotit">Legenda</div>
+  <ul class="leg">${leg}
+  <li class="expl"><i class="fdem" style="background:linear-gradient(135deg,#00ffff 0 50%,#9900ff 50% 100%)"></i>1 evento no dia: fundo na cor da categoria. 2 ou mais no mesmo dia: a célula é dividida em faixas diagonais, uma na cor de cada evento — passe o mouse sobre o dia (ou veja a lista do mês) para saber quais são.</li>
+  </ul></div>`;
+}
+
+function render(porMes, fonte){
+  document.getElementById("ano").textContent = CONFIG.ano;
+  document.getElementById("titulo").textContent = CONFIG.titulo;
+  document.getElementById("subtitulo").textContent = CONFIG.subtitulo;
+  document.title = `Calendário Escolar ${CONFIG.ano} — Rede Municipal de Joinville`;
+  document.getElementById("meses").innerHTML = MESES.map((_, m) => mesHTML(m, porMes[m])).join("");
+  document.getElementById("rodape").innerHTML = rodape(porMes);
+  const totEI = porMes.reduce((s,x) => s+x.EI, 0), totEF = porMes.reduce((s,x) => s+x.EF, 0);
+  const sSem = CONFIG.semestresEI.reduce((s,[,i,f]) => s+contarPeriodo(pd(i), pd(f), "EI"), 0);
+  const sTri = CONFIG.trimestresEF.reduce((s,[,i,f]) => s+contarPeriodo(pd(i), pd(f), "EF"), 0);
+  const chk = document.getElementById("chk");
+  if (sSem === totEI && sTri === totEF && (totEI || totEF))
+    chk.className = "chk ok", chk.innerHTML = `OK — Dias letivos conferem: E.I. ${totEI} no ano (semestres somam ${sSem}) e E.F. ${totEF} no ano (trimestres somam ${sTri}) — meses e períodos batem`;
+  else
+    chk.className = "chk bad", chk.innerHTML = `VERIFICAR — Meses somam E.I. ${totEI} / E.F. ${totEF}; períodos somam E.I. ${sSem} / E.F. ${sTri}. Confira feriados, ponto facultativo, recesso e as datas dos períodos no CONFIG`;
+  encolherListas();
+  recalcular();
+  document.getElementById("fonte").textContent = `${fonte} · ${EVENTOS.length} eventos · ${INI === 0 ? "" : "ano letivo " + pd2br(INI) + " a " + pd2br(FIM)}`;
+  document.getElementById("avisos").textContent = AVISOS.join("\n");
+}
+
+/* Encolhe a lista de eventos de cada mês até caber no espaço fixo */
+function encolherListas(){
+  document.querySelectorAll(".evwrap").forEach(wrap => {
+    const ul = wrap.querySelector("ul");
+    const passos = ["", "compacta", "compacta duas", "micro duas"];
+    for (const p of passos){ ul.className = "ev-list " + p; if (ul.scrollHeight <= wrap.clientHeight + 1) return; }
+    const itens = [...ul.children];
+    for (let fim = itens.length - 1; fim > 0; fim--){
+      itens[fim].remove();
+      if (ul.scrollHeight <= wrap.clientHeight + 1){
+        const li = document.createElement("li");
+        li.className = "maisl";
+        li.textContent = `+ ${itens.length - fim} evento(s) iniciam neste mês`;
+        ul.appendChild(li);
+        return;
+      }
+    }
+  });
+}
+
+/* Garante 1 página na impressão e ajusta a folha à janela na tela */
+function recalcular(){
+  const papel = document.getElementById("papel"), stage = document.querySelector(".stage");
+  stage.style.setProperty("--ztela", 1);
+  const dispH = 407 / 25.4 * 96;             // altura útil da página A3 (408mm menos folga)
+  const h = papel.offsetHeight, w = papel.offsetWidth;
+  let zimp = 1;
+  if (h > dispH) zimp = Math.max(0.75, dispH / h * 0.998);
+  papel.style.setProperty("--zimp", zimp);
+  const extra = zimp < 1 ? `\nAtenção: o conteúdo excede 1 página A3 e será reduzido para ${(zimp*100).toFixed(0)}% na impressão.` : "";
+  document.getElementById("avisos").textContent = (AVISOS.join("\n") + extra).trim();
+  const ztela = Math.min(1, (window.innerWidth - 16) / w);
+  stage.style.setProperty("--ztela", ztela);
+}
+
+/* ============================ carga de dados ============================ */
+function carregar(csv, fonte){
+  try { buildEventos(csv); }
+  catch (err){
+    document.getElementById("fonte").textContent = "Erro ao ler os dados: " + err.message;
+    document.getElementById("avisos").textContent = "Corrija o CSV ou clique em Recarregar para voltar aos dados de exemplo.";
+    return;
+  }
+  const porMes = MESES.map((_, m) => ({EI: contarMes(m, "EI"), EF: contarMes(m, "EF")}));
+  render(porMes, fonte);
+}
+
+/* ============================ Supabase (fase 1) ============================
+   Lê as tabelas eventos / categorias / configuracoes (leitura pública via RLS)
+   e monta um CSV equivalente ao da planilha para usar o mesmo processador.
+   ?csv=LINK na barra de endereço continua funcionando e tem prioridade. */
+async function buscarSupabase(){
+  const base = CONFIG.supabase.url.replace(/\/+$/, "");
+  const cab = {apikey: CONFIG.supabase.key, Authorization: "Bearer " + CONFIG.supabase.key};
+  const pega = async rota => {
+    const r = await fetch(base + rota + (rota.includes("?") ? "&" : "?") + "t=" + Date.now(), {headers: cab});
+    if (!r.ok) throw new Error("HTTP " + r.status + " em " + rota.split("?")[0]);
+    return r.json();
+  };
+  const [cats, cfgs, evs] = await Promise.all([
+    pega("/rest/v1/categorias?select=chave,nome,cor,ordem&order=ordem.asc"),
+    pega("/rest/v1/configuracoes?select=*&id=eq.1"),
+    pega("/rest/v1/eventos?select=inicio,fim,titulo,categoria,etapa,letivo&order=id.asc")
+  ]);
+  /* categorias do banco alimentam a legenda (cores editáveis no futuro painel) */
+  cats.forEach(c => { if (c.chave) CATS[c.chave] = [c.nome || c.chave, c.cor || "#cccccc"]; });
+  /* configurações do banco substituem ano, título e períodos letivos */
+  if (cfgs && cfgs.length){
+    const c = cfgs[0];
+    if (c.ano) CONFIG.ano = +c.ano || CONFIG.ano;
+    if (c.titulo) CONFIG.titulo = c.titulo;
+    if (c.subtitulo) CONFIG.subtitulo = c.subtitulo;
+    if (Array.isArray(c.semestres_ei) && c.semestres_ei.length) CONFIG.semestresEI = c.semestres_ei;
+    if (Array.isArray(c.trimestres_ef) && c.trimestres_ef.length) CONFIG.trimestresEF = c.trimestres_ef;
+  }
+  /* eventos → linhas de CSV (com aspas quando o texto tem vírgula ou aspas) */
+  const qcsv = x => { x = String(x == null ? "" : x); return /[",\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; };
+  const linhas = evs.map(e => [e.inicio, e.fim, e.titulo, e.categoria, e.etapa, e.letivo === false ? "n" : ""].map(qcsv).join(","));
+  if (!linhas.length) throw new Error("tabela de eventos vazia");
+  return "inicio,fim,titulo,categoria,etapa,letivo\n" + linhas.join("\n");
+}
+
+async function init(){
+  const p = new URLSearchParams(location.search);
+  if (p.get("ano")) CONFIG.ano = parseInt(p.get("ano"), 10) || CONFIG.ano;
+  let csv = SAMPLE, fonte = "Dados de exemplo embutidos (calendário 2027 do PDF oficial)";
+  const url = p.get("csv") || CONFIG.csvUrl;
+  if (url){
+    try {
+      const r = await fetch(url + (url.includes("?") ? "&" : "?") + "t=" + Date.now());
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      csv = await r.text();
+      fonte = "Planilha carregada às " + new Date().toLocaleTimeString("pt-BR");
+    } catch (err){
+      fonte = "Falha ao ler a planilha (" + err.message + ") — exibindo dados de exemplo";
+    }
+  } else if (CONFIG.supabase && CONFIG.supabase.url && CONFIG.supabase.key){
+    try {
+      csv = await buscarSupabase();
+      fonte = "Supabase · lido às " + new Date().toLocaleTimeString("pt-BR");
+    } catch (err){
+      fonte = "Falha ao ler o Supabase (" + err.message + ") — exibindo dados de exemplo";
+    }
+  }
+  carregar(csv, fonte);
+}
+
+function baixarExemplo(){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([SAMPLE], {type: "text/csv;charset=utf-8"}));
+  a.download = "calendario-" + CONFIG.ano + ".csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.getElementById("arq").addEventListener("change", e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => carregar(rd.result, "Arquivo carregado: " + f.name);
+  rd.readAsText(f, "utf-8");
+  e.target.value = "";
+});
+let rAF = 0;
+window.addEventListener("resize", () => { cancelAnimationFrame(rAF); rAF = requestAnimationFrame(recalcular); });
+init();
+</script>
+</body>
+</html>
