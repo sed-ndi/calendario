@@ -172,7 +172,7 @@ const CONFIG = {
      e key = chave "anon public" (é pública por design; a segurança de
      escrita é garantida pelas políticas RLS criadas no script SQL).
      Enquanto estiver vazio, a página usa os dados de exemplo embutidos. */
-  supabase: { url: "https://jgxabbwyomoablbsbubn.supabase.co", key: "sb_publishable__TfexKHMBWmC0ukdPUGmMg_kOoaMAiq" },
+  supabase: { url: "", key: "" },
   semestresEI: [["1º Semestre","2027-02-10","2027-07-16"],["2º Semestre","2027-08-02","2027-12-21"]],
   trimestresEF: [["1º Trimestre","2027-02-10","2027-05-14"],["2º Trimestre","2027-05-17","2027-09-17"],["3º Trimestre","2027-09-20","2027-12-21"]]
 };
@@ -591,10 +591,17 @@ function carregar(csv, fonte){
    ?csv=LINK na barra de endereço continua funcionando e tem prioridade. */
 async function buscarSupabase(){
   const base = CONFIG.supabase.url.replace(/\/+$/, "");
-  const cab = {apikey: CONFIG.supabase.key, Authorization: "Bearer " + CONFIG.supabase.key};
+  /* Chaves novas (sb_publishable_...) vão apenas no header apikey.
+     O header Authorization: Bearer só é usado com a chave anon JWT antiga (eyJ...). */
+  const cab = {apikey: CONFIG.supabase.key};
+  if (/^eyJ/.test(CONFIG.supabase.key)) cab.Authorization = "Bearer " + CONFIG.supabase.key;
   const pega = async rota => {
     const r = await fetch(base + rota + (rota.includes("?") ? "&" : "?") + "t=" + Date.now(), {headers: cab});
-    if (!r.ok) throw new Error("HTTP " + r.status + " em " + rota.split("?")[0]);
+    if (!r.ok){
+      let msg = "HTTP " + r.status + " em " + rota.split("?")[0];
+      try { const j = await r.json(); if (j.message) msg += ": " + j.message; } catch (_) {}
+      throw new Error(msg);
+    }
     return r.json();
   };
   const [cats, cfgs, evs] = await Promise.all([
