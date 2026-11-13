@@ -101,6 +101,35 @@ td.t{background:#ffff66;font-weight:bold}
 .chk{margin:2.2mm 3mm 0;font-size:8pt;font-weight:bold;padding:1.1mm 2mm;border:0.35mm solid;text-align:center}
 .chk.ok{color:#176d2a;background:#eaf6ea;border-color:#176d2a}
 .chk.bad{color:#b00020;background:#fdecec;border-color:#b00020}
+
+/* ---------- login e editor de eventos (fase 2 — só aparecem na tela) ---------- */
+.modal{position:fixed;inset:0;background:rgba(10,20,30,.5);display:flex;align-items:center;justify-content:center;z-index:60;padding:12px}
+.modal[hidden]{display:none!important}   /* o display:flex acima vence o hidden padrão — precisa desta regra */
+.mcard{background:#fff;border-radius:6px;box-shadow:0 8px 30px rgba(0,0,0,.4);padding:16px 18px;width:min(94vw,440px);max-height:92vh;overflow:auto;font-size:14px}
+.mcard h3{margin:0 0 10px;color:var(--navy);font-size:16px}
+.mcard label{display:block;margin:8px 0 2px;font-weight:bold;color:#333;font-size:12.5px}
+.mcard input,.mcard select{width:100%;padding:6px 8px;border:1px solid #b9c4cf;border-radius:3px;font-size:14px;font-family:inherit}
+.mcard .mlinha{display:flex;gap:10px}
+.mcard .mlinha>div{flex:1;min-width:0}
+.mcard .mchk{display:flex;gap:6px;align-items:center;font-weight:normal;margin:2px 0 0}
+.mcard .mchk input{width:auto}
+.merro{color:#b00020;font-size:12.5px;min-height:17px;margin-top:8px;white-space:pre-line}
+.mbotoes{display:flex;gap:8px;margin-top:6px}
+.mbotoes button{padding:7px 14px;cursor:pointer;color:#fff;border:0;border-radius:3px;font-size:14px}
+.mbotoes .mprim{background:var(--navy)}
+.mbotoes .msec{background:#6b7a88}
+.mbotoes .mdel{background:#b00020;margin-right:auto}
+.mlista{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.mlista button{text-align:left;padding:8px 10px;border:1px solid #c5d3e0;background:#f2f6fa;border-radius:4px;cursor:pointer;font-size:13.5px}
+.mlista button:hover{border-color:var(--navy);background:#e8eff6}
+.mlista .mc{display:inline-block;width:11px;height:11px;border:1px solid rgba(0,0,0,.4);border-radius:2px;margin-right:7px;vertical-align:-1px}
+.mlista small{color:#555}
+body.adm .d[data-dia]{cursor:pointer}
+#bEntrar{display:none}
+body.comsupa:not(.adm) #bEntrar{display:inline-block}
+#lusuario{display:none;align-items:center;gap:6px;color:var(--navy);font-weight:bold}
+body.adm #lusuario{display:flex}
+#lusuario span{font-size:12.5px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -109,19 +138,23 @@ td.t{background:#ffff66;font-weight:bold}
   <div class="l1">
     <strong>Calendário Escolar</strong>
     <span id="fonte">carregando…</span>
-    <button onclick="init()" title="Ler novamente a planilha configurada">Recarregar planilha</button>
+    <button onclick="init()" title="Ler novamente a fonte configurada (Supabase ou planilha)">Recarregar dados</button>
     <button class="sec" onclick="document.getElementById('arq').click()" title="Testar um CSV salvo no computador">Carregar CSV…</button>
     <input type="file" id="arq" accept=".csv,text/csv" hidden>
     <button class="sec" onclick="baixarExemplo()" title="Baixar o CSV de exemplo (calendário 2027)">Baixar CSV de exemplo</button>
     <button class="imp" onclick="window.print()">Imprimir / PDF (A3 retrato)</button>
     <button class="sec" onclick="var a=document.getElementById('ajuda');a.hidden=!a.hidden">Ajuda</button>
+    <button id="bEntrar" onclick="abrirLogin()" title="Entrar para editar o calendário">Entrar</button>
+    <span id="lusuario"><span id="lemail"></span><button class="sec" onclick="sair()">Sair</button></span>
   </div>
   <div class="warn" id="avisos"></div>
 </div>
 
 <div id="ajuda" class="no-print" hidden>
   <h3>Conectar ao Supabase (banco de dados)</h3>
-  <p>Com o projeto Supabase criado e o script <code>supabase_fase1.sql</code> executado, preencha <code>CONFIG.supabase</code> com a <b>URL</b> e a chave <b>anon public</b> (Settings &gt; API do projeto). A página passa a ler as tabelas <code>eventos</code>, <code>categorias</code> e <code>configuracoes</code>: visitantes têm só leitura (RLS); a escrita será liberada na fase de login admin. Enquanto esses campos estiverem vazios, a página usa os dados de exemplo embutidos.</p>
+  <p>Com o projeto Supabase criado e o script <code>supabase_fase1.sql</code> executado, preencha <code>CONFIG.supabase</code> com a <b>URL</b> e a chave <b>anon public</b> (Settings &gt; API do projeto). A página passa a ler as tabelas <code>eventos</code>, <code>categorias</code> e <code>configuracoes</code>: visitantes têm só leitura (RLS); a escrita é liberada ao entrar com conta admin (ver abaixo). Enquanto esses campos estiverem vazios, a página usa os dados de exemplo embutidos.</p>
+  <h3>Editar o calendário (login admin)</h3>
+  <p>As contas são criadas manualmente no painel do Supabase: <b>Authentication → Users → Add user</b> (email + senha; o cadastro público fica desligado). Depois clique em <b>Entrar</b> na barra e informe o email e a senha. Com a sessão ativa, <b>duplo clique</b> em um dia abre o editor: escolha um evento para alterar (início, fim, título, categoria, etapa, dia letivo) ou crie um novo; ao salvar, o banco é atualizado e o calendário redesenha na hora. Eventos de período não pintam sábado/domingo nem categorias fortes — as mesmas regras do CSV valem aqui. A sessão fica guardada neste navegador e é renovada automaticamente; use <b>Sair</b> em computadores compartilhados. A edição só é possível com dados vindos do Supabase (não com <code>?csv=</code> ou arquivo local).</p>
   <h3>Conectar à planilha Google</h3>
   <p>Na planilha: <b>Arquivo &gt; Compartilhar &gt; Publicar na web</b> &gt; escolha a aba de <b>eventos</b> &gt; formato <b>CSV</b> &gt; Publicar. Copie o link gerado e cole em <code>CONFIG.csvUrl</code> (no código deste arquivo) ou abra esta página com <code>?csv=LINK</code> no endereço.</p>
   <h3>Colunas esperadas na aba de eventos</h3>
@@ -153,6 +186,49 @@ td.t{background:#ffff66;font-weight:bold}
     <div class="meses" id="meses"></div>
     <div class="rodape" id="rodape"></div>
     <div class="chk" id="chk"></div>
+  </div>
+</div>
+
+<!-- ---------- modais de login e editor de eventos (fase 2, não saem na impressão) ---------- -->
+<div class="modal no-print" id="mLogin" hidden>
+  <div class="mcard">
+    <h3>Entrar para editar</h3>
+    <label>Email</label><input type="email" id="lgEmail" autocomplete="username" placeholder="email@joinville.sc.gov.br">
+    <label>Senha</label><input type="password" id="lgSenha" autocomplete="current-password">
+    <div class="merro" id="lgErro"></div>
+    <div class="mbotoes">
+      <button class="msec" onclick="fecharModal('mLogin')">Cancelar</button>
+      <button class="mprim" onclick="entrar()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal no-print" id="mEvento" hidden>
+  <div class="mcard">
+    <h3 id="evDia">Dia</h3>
+    <div id="evLista"></div>
+    <div id="evForm" hidden>
+      <div class="mlinha">
+        <div><label>Início</label><input id="evIni"></div>
+        <div><label>Fim (vazio = 1 dia)</label><input id="evFim"></div>
+      </div>
+      <label>Título</label><input id="evTit" maxlength="200">
+      <label>Categoria</label><select id="evCat"></select>
+      <div class="mlinha">
+        <div><label>Etapa</label><select id="evEtp">
+          <option value="">Ambas (EI e EF)</option>
+          <option value="EI">E.I. — Educação Infantil</option>
+          <option value="EF">E.F. — Ensino Fundamental</option>
+        </select></div>
+        <div><label>&nbsp;</label><div class="mchk"><input type="checkbox" id="evLet" checked><span>Dia letivo</span></div></div>
+      </div>
+      <div class="merro" id="evErro"></div>
+      <div class="mbotoes">
+        <button class="mdel" id="evExc" onclick="excluirEvento()">Excluir</button>
+        <button class="msec" onclick="fecharModal('mEvento')">Cancelar</button>
+        <button class="mprim" onclick="salvarEvento()">Salvar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -349,6 +425,7 @@ function parseCSV(t){
 
 /* ============================ dados ============================ */
 let EVENTOS = [], AVISOS = [], INI = 0, FIM = 0;
+let fonteAtual = "";   /* ex.: "Supabase · lido às ..." — controla se o editor pode abrir */
 const POR_DIA = new Map();
 
 function buildEventos(csv){
@@ -357,7 +434,8 @@ function buildEventos(csv){
   if (!linhas.length) throw new Error("CSV vazio");
   const cab = linhas.shift().map(norm);
   const cIni = cab.indexOf("inicio"), cFim = cab.indexOf("fim"), cTit = cab.indexOf("titulo"),
-        cCat = cab.indexOf("categoria"), cEtp = cab.indexOf("etapa"), cLet = cab.indexOf("letivo"), cCor = cab.indexOf("cor");
+        cCat = cab.indexOf("categoria"), cEtp = cab.indexOf("etapa"), cLet = cab.indexOf("letivo"), cCor = cab.indexOf("cor"),
+        cId = cab.indexOf("id");   /* id = chave do banco (fase 2, editing); ausente em CSVs comuns */
   if (cIni < 0) throw new Error('Coluna "inicio" não encontrada no CSV');
   const novas = new Set();
   linhas.forEach((r, i) => {
@@ -379,7 +457,10 @@ function buildEventos(csv){
       AVISOS.push(`Linha ${i+2}: etapa "${g("etapa")}" não reconhecida (use EI, EF ou vazio) em "${titulo}"`);
     const letivo = !/^(n|nao|não|false|f|0|no)$/i.test(g("letivo"));
     const add = (ini, fim) => {
-      EVENTOS.push({ini, fim, titulo, cat, etapa, letivo});
+      const idTxt = cId >= 0 ? (r[cId]||"").trim() : "";
+      EVENTOS.push({ini, fim, titulo, cat, etapa, letivo,
+        id: /^\d+$/.test(idTxt) ? +idTxt : null,          /* id do banco p/ editar/excluir */
+        rawIni: (r[cIni]||"").trim(), rawFim: (cFim >= 0 ? (r[cFim]||"").trim() : "")});
       if (fim < CONFIG.ano*10000+101 || ini > CONFIG.ano*10000+1231)
         AVISOS.push(`Linha ${i+2}: "${titulo}" (${pd2br(ini)}) está fora do ano ${CONFIG.ano} e não será exibido`);
     };
@@ -451,7 +532,7 @@ function celula(v, m){
   }
   const tip = evs.length ? esc(`${p2(dia)}/${p2(m+1)}/${CONFIG.ano}\n` + evs.map(e =>
     `- ${e.titulo} [${CATS[e.cat][0]}${e.etapa === "ambos" ? "" : e.etapa === "EI" ? " - E.I." : " - E.F."}${e.letivo ? "" : " - não letivo"}]`).join("\n")) : "";
-  return `<div class="${cls}"${bg ? ` style="background:${bg}"` : ""} title="${tip}"><span class="n"${corTxt ? ` style="color:${corTxt}"` : ""}>${dia}</span></div>`;
+  return `<div class="${cls}" data-dia="${v}"${bg ? ` style="background:${bg}"` : ""} title="${tip}"><span class="n"${corTxt ? ` style="color:${corTxt}"` : ""}>${dia}</span></div>`;
 }
 
 function fmtData(a, b){
@@ -575,6 +656,7 @@ function recalcular(){
 
 /* ============================ carga de dados ============================ */
 function carregar(csv, fonte){
+  fonteAtual = fonte;
   try { buildEventos(csv); }
   catch (err){
     document.getElementById("fonte").textContent = "Erro ao ler os dados: " + err.message;
@@ -596,6 +678,10 @@ async function buscarSupabase(){
   const cab = {apikey: CONFIG.supabase.key};
   if (/^eyJ/.test(CONFIG.supabase.key)) cab.Authorization = "Bearer " + CONFIG.supabase.key;
   const pega = async rota => {
+    /* PostgREST rejeita parâmetros desconhecidos na query (PGRST100, erro
+       "failed to parse filter"), então o cache-buster "?t=..." usado na
+       planilha não pode ser aplicado aqui. Respostas do PostgREST não trazem
+       cabeçalhos de cache, portanto nunca ficam obsoletas no navegador. */
     const r = await fetch(base + rota, {headers: cab});
     if (!r.ok){
       let msg = "HTTP " + r.status + " em " + rota.split("?")[0];
@@ -607,7 +693,7 @@ async function buscarSupabase(){
   const [cats, cfgs, evs] = await Promise.all([
     pega("/rest/v1/categorias?select=chave,nome,cor,ordem&order=ordem.asc"),
     pega("/rest/v1/configuracoes?select=*&id=eq.1"),
-    pega("/rest/v1/eventos?select=inicio,fim,titulo,categoria,etapa,letivo&order=id.asc")
+    pega("/rest/v1/eventos?select=id,inicio,fim,titulo,categoria,etapa,letivo&order=id.asc")
   ]);
   /* categorias do banco alimentam a legenda (cores editáveis no futuro painel) */
   cats.forEach(c => { if (c.chave) CATS[c.chave] = [c.nome || c.chave, c.cor || "#cccccc"]; });
@@ -620,16 +706,220 @@ async function buscarSupabase(){
     if (Array.isArray(c.semestres_ei) && c.semestres_ei.length) CONFIG.semestresEI = c.semestres_ei;
     if (Array.isArray(c.trimestres_ef) && c.trimestres_ef.length) CONFIG.trimestresEF = c.trimestres_ef;
   }
-  /* eventos → linhas de CSV (com aspas quando o texto tem vírgula ou aspas) */
+  /* eventos → linhas de CSV (com aspas quando o texto tem vírgula ou aspas).
+     O id vai na última coluna: é a chave do banco para o editor (fase 2). */
   const qcsv = x => { x = String(x == null ? "" : x); return /[",\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; };
-  const linhas = evs.map(e => [e.inicio, e.fim, e.titulo, e.categoria, e.etapa, e.letivo === false ? "n" : ""].map(qcsv).join(","));
+  const linhas = evs.map(e => [e.inicio, e.fim, e.titulo, e.categoria, e.etapa, e.letivo === false ? "n" : "", e.id].map(qcsv).join(","));
   if (!linhas.length) throw new Error("tabela de eventos vazia");
-  return "inicio,fim,titulo,categoria,etapa,letivo\n" + linhas.join("\n");
+  return "inicio,fim,titulo,categoria,etapa,letivo,id\n" + linhas.join("\n");
+}
+
+/* ============================ login admin (fase 2) ============================
+   Login com email/senha do Supabase Auth (contas criadas manualmente no painel,
+   cadastro público desligado). A sessão fica no localStorage e é renovada
+   automaticamente. Sem sessão a página é somente leitura — o RLS do banco
+   garante que ninguém escreva sem estar autenticado. */
+const CHAVE_SESSAO = "calendarioAdminSessao";
+let SESS = null;
+function sessaoLer(){ try { SESS = JSON.parse(localStorage.getItem(CHAVE_SESSAO)) || null; } catch (_){ SESS = null; } }
+function sessaoSalvar(){ if (SESS) localStorage.setItem(CHAVE_SESSAO, JSON.stringify(SESS)); else localStorage.removeItem(CHAVE_SESSAO); }
+function sessaoLimpar(){ SESS = null; sessaoSalvar(); }
+const baseSB = () => CONFIG.supabase.url.replace(/\/+$/, "");
+const expiraEmMs = () => SESS && SESS.expires_at ? SESS.expires_at * 1000 : 0;
+function sessaoOk(){ return !!(SESS && SESS.access_token && Date.now() < expiraEmMs() - 30000); }
+
+function atualizarLoginUI(){
+  const ok = sessaoOk();
+  document.body.classList.toggle("adm", ok);
+  document.body.classList.toggle("comsupa", !!(CONFIG.supabase && CONFIG.supabase.url && CONFIG.supabase.key));
+  document.getElementById("lemail").textContent = ok ? SESS.email : "";
+}
+
+function abrirLogin(){
+  document.getElementById("lgErro").textContent = "";
+  document.getElementById("mEvento").hidden = true;
+  abrirModal("mLogin");
+  setTimeout(() => document.getElementById("lgEmail").focus(), 60);
+}
+
+async function entrar(){
+  const erro = document.getElementById("lgErro");
+  erro.textContent = "";
+  const email = document.getElementById("lgEmail").value.trim(), senha = document.getElementById("lgSenha").value;
+  if (!email || !senha){ erro.textContent = "Preencha email e senha."; return; }
+  let r;
+  try {
+    r = await fetch(baseSB() + "/auth/v1/token?grant_type=password",
+      {method: "POST", headers: {apikey: CONFIG.supabase.key, "Content-Type": "application/json"},
+       body: JSON.stringify({email, password: senha})});
+  } catch (_){ erro.textContent = "Sem conexão com o Supabase."; return; }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok){ erro.textContent = j.error_description || j.msg || j.message || ("Falha no login (HTTP " + r.status + ")"); return; }
+  SESS = {access_token: j.access_token, refresh_token: j.refresh_token, expires_at: j.expires_at, email: (j.user && j.user.email) || email};
+  sessaoSalvar();
+  document.getElementById("lgSenha").value = "";
+  fecharModal("mLogin");
+  atualizarLoginUI();
+  /* garante que os eventos em tela vêm do banco (com id) — exceto se o usuário
+     carregou uma planilha própria (?csv= ou arquivo), que tem prioridade */
+  if (!fonteAtual.startsWith("Planilha") && !fonteAtual.startsWith("Arquivo")) await recarregarDadosSupabase();
+}
+
+async function renovarSessao(){
+  if (!SESS || !SESS.refresh_token) return false;
+  try {
+    const r = await fetch(baseSB() + "/auth/v1/token?grant_type=refresh_token",
+      {method: "POST", headers: {apikey: CONFIG.supabase.key, "Content-Type": "application/json"},
+       body: JSON.stringify({refresh_token: SESS.refresh_token})});
+    if (!r.ok) throw 0;
+    const j = await r.json();
+    SESS = {access_token: j.access_token, refresh_token: j.refresh_token, expires_at: j.expires_at, email: SESS.email};
+    sessaoSalvar(); atualizarLoginUI(); return true;
+  } catch (_){ sessaoLimpar(); atualizarLoginUI(); return false; }
+}
+
+async function garantirToken(){
+  if (!sessaoOk()) await renovarSessao();
+  if (!sessaoOk()) throw new Error("sessão expirada — entre novamente");
+}
+
+async function sair(){
+  try { await fetch(baseSB() + "/auth/v1/logout",
+    {method: "POST", headers: {apikey: CONFIG.supabase.key, Authorization: "Bearer " + (SESS ? SESS.access_token : "")}}); } catch (_){}
+  sessaoLimpar();
+  atualizarLoginUI();
+}
+
+/* ============================ editor de eventos (fase 2) ============================
+   Duplo clique num dia abre o editor com os eventos do dia. Só funciona
+   logado e com dados vindos do Supabase (os eventos precisam do id do banco). */
+let evAlvo = null;   /* {id: número|null (null = novo), dia: aaaammdd} */
+
+function fecharModal(id){ document.getElementById(id).hidden = true; }
+function abrirModal(id){ document.getElementById(id).hidden = false; }
+
+const v2iso = v => Math.floor(v/10000) + "-" + p2(Math.floor(v/100)%100) + "-" + p2(v%100);
+const diaBR = v => `${p2(v%100)}/${p2(Math.floor(v/100)%100)}/${Math.floor(v/10000)}`;
+
+function abrirEditor(dia){
+  const evs = (POR_DIA.get(dia) || []).filter(e => e.id);
+  evAlvo = {id: null, dia};
+  document.getElementById("evDia").textContent = "Dia " + diaBR(dia);
+  const selCat = document.getElementById("evCat");
+  const selAnt = selCat.value;
+  selCat.innerHTML = Object.entries(CATS).map(([k, v]) => `<option value="${k}">${esc(v[0])}</option>`).join("");
+  if ([...selCat.options].some(o => o.value === selAnt)) selCat.value = selAnt;
+  const lista = document.getElementById("evLista");
+  lista.innerHTML = evs.map(e =>
+    `<button onclick="preencherForm(${e.id})"><span class="mc" style="background:${CATS[e.cat] ? CATS[e.cat][1] : "#ccc"}"></span>` +
+    `${esc(e.titulo)} <small>(${esc(CATS[e.cat] ? CATS[e.cat][0] : e.cat)})</small></button>`).join("")
+    + `<button onclick="preencherForm(null)"><b>+ Novo evento neste dia</b></button>`;
+  document.getElementById("evForm").hidden = true;
+  abrirModal("mEvento");
+}
+
+function preencherForm(id){
+  const e = id === null ? null : (POR_DIA.get(evAlvo.dia) || []).find(x => x.id === id);
+  if (id !== null && !e) return;
+  evAlvo.id = id;
+  const fIni = document.getElementById("evIni"), fFim = document.getElementById("evFim");
+  if (e){
+    /* eventos com várias datas no início (ex.: "09/04,10/04,16/04") abrem como texto */
+    const multi = extrairDatas(e.rawIni, CONFIG.ano).length > 1;
+    fIni.type = multi ? "text" : "date";
+    fIni.value = multi ? e.rawIni : v2iso(e.ini);
+    const fimV = (e.rawFim || "").trim();
+    const fimData = pd(fimV, CONFIG.ano);
+    fFim.type = fimV && !fimData ? "text" : "date";
+    fFim.value = fimData ? v2iso(fimData) : fimV;
+    document.getElementById("evTit").value = e.titulo;
+    document.getElementById("evCat").value = e.cat;
+    document.getElementById("evEtp").value = e.etapa === "ambos" ? "" : e.etapa;
+    document.getElementById("evLet").checked = e.letivo;
+    document.getElementById("evExc").style.display = "";
+  } else {
+    fIni.type = "date"; fIni.value = v2iso(evAlvo.dia);
+    fFim.type = "date"; fFim.value = "";
+    document.getElementById("evTit").value = "";
+    document.getElementById("evCat").value = document.getElementById("evCat").options[0].value;
+    document.getElementById("evEtp").value = "";
+    document.getElementById("evLet").checked = true;
+    document.getElementById("evExc").style.display = "none";
+  }
+  document.getElementById("evErro").textContent = "";
+  document.getElementById("evForm").hidden = false;
+}
+
+/* INSERT / UPDATE / DELETE no Supabase (REST) com o token do admin logado */
+async function restEscrita(metodo, caminho, corpo){
+  await garantirToken();
+  const r = await fetch(baseSB() + caminho, {
+    method: metodo,
+    headers: {apikey: CONFIG.supabase.key, Authorization: "Bearer " + SESS.access_token,
+              "Content-Type": "application/json", Prefer: "return=representation"},
+    body: corpo ? JSON.stringify(corpo) : undefined
+  });
+  if (r.ok) return r.status === 204 ? null : r.json().catch(() => null);
+  const j = await r.json().catch(() => ({}));
+  throw new Error("HTTP " + r.status + (j.message ? " — " + j.message : ""));
+}
+
+async function salvarEvento(){
+  const erro = document.getElementById("evErro");
+  erro.textContent = "";
+  const iniTxt = document.getElementById("evIni").value.trim();
+  const dts = extrairDatas(iniTxt, CONFIG.ano);
+  if (!dts.length){ erro.textContent = 'Início inválido — use AAAA-MM-DD, DD/MM/AAAA ou lista "05/03,07/03".'; return; }
+  const fimTxt = document.getElementById("evFim").value.trim();
+  if (fimTxt){
+    const fimOk = pd(fimTxt, CONFIG.ano);
+    if (!fimOk){ erro.textContent = "Fim inválido — use AAAA-MM-DD ou DD/MM/AAAA (vazio = evento de 1 dia)."; return; }
+    if (dts.length === 1 && fimOk < dts[0]){ erro.textContent = "A data final é anterior à inicial."; return; }
+  }
+  const corpo = {
+    inicio: iniTxt,
+    fim: fimTxt || null,
+    titulo: document.getElementById("evTit").value.trim() || "(sem título)",
+    categoria: document.getElementById("evCat").value,
+    etapa: document.getElementById("evEtp").value || null,
+    letivo: document.getElementById("evLet").checked,
+    atualizado_em: new Date().toISOString()
+  };
+  erro.textContent = "Salvando…";
+  try {
+    if (evAlvo.id) await restEscrita("PATCH", "/rest/v1/eventos?id=eq." + evAlvo.id, corpo);
+    else await restEscrita("POST", "/rest/v1/eventos", corpo);
+  } catch (e){ erro.textContent = "Erro ao salvar: " + e.message; return; }
+  fecharModal("mEvento");
+  await recarregarDadosSupabase();
+}
+
+async function excluirEvento(){
+  if (!evAlvo || !evAlvo.id) return;
+  const erro = document.getElementById("evErro");
+  erro.textContent = "Excluindo…";
+  try { await restEscrita("DELETE", "/rest/v1/eventos?id=eq." + evAlvo.id); }
+  catch (e){ erro.textContent = "Erro ao excluir: " + e.message; return; }
+  fecharModal("mEvento");
+  await recarregarDadosSupabase();
+}
+
+async function recarregarDadosSupabase(){
+  try {
+    const csv = await buscarSupabase();
+    carregar(csv, "Supabase · lido às " + new Date().toLocaleTimeString("pt-BR"));
+  } catch (e){
+    document.getElementById("avisos").textContent = "Falha ao recarregar o Supabase: " + e.message;
+  }
 }
 
 async function init(){
   const p = new URLSearchParams(location.search);
   if (p.get("ano")) CONFIG.ano = parseInt(p.get("ano"), 10) || CONFIG.ano;
+  /* restaura sessão admin salva (renova o token se venceu) */
+  sessaoLer();
+  if (SESS && !sessaoOk()) await renovarSessao();
+  atualizarLoginUI();
   let csv = SAMPLE, fonte = "Dados de exemplo embutidos (calendário 2027 do PDF oficial)";
   const url = p.get("csv") || CONFIG.csvUrl;
   if (url){
@@ -667,6 +957,20 @@ document.getElementById("arq").addEventListener("change", e => {
   rd.onload = () => carregar(rd.result, "Arquivo carregado: " + f.name);
   rd.readAsText(f, "utf-8");
   e.target.value = "";
+});
+
+/* fase 2: duplo clique no dia abre o editor (só logado e com dados do Supabase) */
+document.getElementById("meses").addEventListener("dblclick", e => {
+  const c = e.target.closest(".d[data-dia]");
+  if (!c || !sessaoOk() || !fonteAtual.startsWith("Supabase")) return;
+  abrirEditor(+c.dataset.dia);
+});
+/* fecha modais com Esc e envia o login com Enter */
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape"){ fecharModal("mLogin"); fecharModal("mEvento"); }
+});
+document.getElementById("mLogin").addEventListener("keydown", e => {
+  if (e.key === "Enter") entrar();
 });
 let rAF = 0;
 window.addEventListener("resize", () => { cancelAnimationFrame(rAF); rAF = requestAnimationFrame(recalcular); });
