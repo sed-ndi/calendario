@@ -7,13 +7,14 @@
 <style>
 /* ==================================================================
    CALENDÁRIO ESCOLAR — REDE MUNICIPAL DE JOINVILLE
-   - A folha tem 284mm de largura (A3 retrato = 297mm - 2x6mm de margem)
+   - A folha tem 284mm de largura (A3 retrato = 297mm, margens de impressão 5mm)
    - A impressão é forçada para A3 retrato em UMA página (@page abaixo)
    - Se o conteúdo crescer, o JS reduz a escala automaticamente (--zimp)
    - Na tela a folha é reduzida para caber na janela (--ztela)
 ================================================================== */
 :root{--navy:#0b3a63;--laranja:#f5a01e;--linha:#1c2b36;--wd:#cfe2f3}
 *{box-sizing:border-box}
+[hidden]{display:none!important}   /* display próprio (flex, block…) não pode vencer o atributo hidden */
 html,body{margin:0;padding:0}
 body{font-family:Arial,Helvetica,sans-serif;background:#545a60;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 
@@ -35,7 +36,7 @@ body{font-family:Arial,Helvetica,sans-serif;background:#545a60;color:#111;-webki
 /* ---------- a folha (página A3) ---------- */
 .papel{width:284mm;min-height:406mm;background:#fff;margin:0 auto;box-shadow:0 3px 18px rgba(0,0,0,.45)}
 @media print{
-  @page{size:A3 portrait;margin:6mm}
+  @page{size:A3 portrait;margin:5mm}
   body{background:#fff}
   .no-print{display:none!important}
   .stage{zoom:1;padding:0}
@@ -43,14 +44,18 @@ body{font-family:Arial,Helvetica,sans-serif;background:#545a60;color:#111;-webki
 }
 
 /* ---------- cabeçalho ---------- */
-.banner{display:flex;align-items:stretch;background:var(--laranja);border:0.8mm solid var(--navy);margin:3mm 3mm 2.5mm}
+/* Cabeçalho oficial em PNG (1480×360). O JS tenta os caminhos de
+   CONFIG.imgCabecalho em ordem (1º relativo — pasta image/ do repositório
+   GitHub; 2º link direto do raw). Se nenhum carregar, fica o banner textual. */
+.cabimg{display:block;width:calc(100% - 6mm);height:auto;margin:2mm 3mm 2mm}
+.banner{display:flex;align-items:stretch;background:var(--laranja);border:0.8mm solid var(--navy);margin:2mm 3mm 2mm}
 .banner .ano{background:var(--navy);color:#fff;font-size:22pt;font-weight:bold;display:flex;align-items:center;padding:0 5mm}
 .banner .tt{flex:1;display:flex;flex-direction:column;justify-content:center;gap:1.2mm;padding:1.5mm 3mm;min-width:0}
 .banner h1{margin:0;color:#fff;font-size:15pt;line-height:1.12}
 .banner .sub{background:#fff;color:var(--navy);font-style:italic;font-weight:bold;font-size:9.5pt;padding:0.8mm 2.5mm;align-self:flex-start}
 
 /* ---------- grade de meses ---------- */
-.meses{display:grid;grid-template-columns:repeat(3,1fr);gap:2.2mm 3mm;margin:0 3mm}
+.meses{display:grid;grid-template-columns:repeat(3,1fr);gap:1.8mm 3mm;margin:0 3mm}
 .mh{background:var(--navy);color:#fff;display:flex;justify-content:space-between;align-items:center;height:6.4mm;padding:0 1.2mm 0 1.6mm}
 .mh .nome{font-size:10.5pt;font-weight:bold;letter-spacing:.2mm}
 .mh .dl{display:flex;align-items:center;gap:1.2mm}
@@ -59,11 +64,11 @@ body{font-family:Arial,Helvetica,sans-serif;background:#545a60;color:#111;-webki
 .mh .bx span{font-size:6.2pt}
 .mh .bx b{font-size:8pt}
 .wd{display:grid;grid-template-columns:repeat(7,1fr);background:var(--wd);border:0.3mm solid var(--linha);border-bottom:0}
-.wd div{text-align:center;font-size:7.5pt;font-weight:bold;color:var(--navy);padding:0.55mm 0;border-right:0.25mm solid var(--linha)}
+.wd div{text-align:center;font-size:7pt;font-weight:bold;color:var(--navy);padding:0.42mm 0;border-right:0.25mm solid var(--linha)}
 .wd div:last-child{border-right:0}
 .wd div.fim{color:#c00}
 .g{display:grid;grid-template-columns:repeat(7,1fr);border:0.3mm solid var(--linha);border-top:0}
-.d{position:relative;height:7mm;display:flex;justify-content:center;align-items:center;border-right:0.25mm solid var(--linha);border-bottom:0.25mm solid var(--linha)}
+.d{position:relative;height:6mm;display:flex;justify-content:center;align-items:center;border-right:0.25mm solid var(--linha);border-bottom:0.25mm solid var(--linha)}
 .d:nth-child(7n){border-right:0}
 .d:nth-last-child(-n+7){border-bottom:0}
 .d .n{font-size:9pt;line-height:1}
@@ -74,31 +79,32 @@ body{font-family:Arial,Helvetica,sans-serif;background:#545a60;color:#111;-webki
 .d.multi .n{font-weight:bold;text-shadow:0 0 0.6mm rgba(255,255,255,.45)}
 
 /* lista de eventos de cada mês */
-.evwrap{height:24mm;overflow:hidden;margin:1.2mm 0.8mm 0}
+.evwrap{height:20mm;overflow:hidden;margin:1mm 0.8mm 0}
 .ev-list{margin:0;padding:0;list-style:none;font-size:7pt;line-height:1.3}
 .ev-list li{margin:0 0 0.75mm;break-inside:avoid}
 .ev-list .dt{font-weight:bold}
 .ev-list.compacta{font-size:6.3pt;line-height:1.22}
 .ev-list.compacta li{margin-bottom:0.5mm}
 .ev-list.duas{columns:2;column-gap:2mm}
+.ev-list.tres{columns:3;column-gap:1.6mm}
 .ev-list.micro{font-size:5.8pt;line-height:1.16}
 .ev-list.micro li{margin-bottom:0.3mm}
 .ev-list .maisl{color:#555;font-style:italic}
 
 /* ---------- rodapé: tabelas e legenda ---------- */
-.rodape{display:grid;grid-template-columns:0.75fr 1.05fr 1.4fr;gap:3mm;margin:2.5mm 3mm 0;align-items:start}
+.rodape{display:grid;grid-template-columns:0.75fr 1.05fr 1.4fr;gap:3mm;margin:2mm 3mm 0;align-items:start}
 .blocotit{background:var(--navy);color:#fff;font-size:7.6pt;font-weight:bold;text-align:center;padding:0.75mm;margin-bottom:0.8mm}
-table{border-collapse:collapse;width:100%;font-size:7pt}
-th,td{border:0.25mm solid var(--linha);padding:0.35mm 1.1mm;text-align:center}
+table{border-collapse:collapse;width:100%;font-size:6.4pt}
+th,td{border:0.25mm solid var(--linha);padding:0.28mm 1mm;text-align:center}
 th{background:var(--navy);color:#fff}
 td.t{background:#ffff66;font-weight:bold}
-.leg{list-style:none;margin:0;padding:0;border:0.25mm solid var(--linha);font-size:6.4pt;columns:2;column-gap:2.5mm}
-.leg li{display:flex;align-items:center;gap:1.4mm;padding:0.4mm 1.2mm;border-bottom:0.2mm solid #ddd;text-align:left;break-inside:avoid}
+.leg{list-style:none;margin:0;padding:0;border:0.25mm solid var(--linha);font-size:6.1pt;columns:2;column-gap:2.5mm}
+.leg li{display:flex;align-items:center;gap:1.4mm;padding:0.3mm 1.2mm;border-bottom:0.2mm solid #ddd;text-align:left;break-inside:avoid}
 .leg li:last-child{border-bottom:0}
 .leg i{width:5mm;height:3mm;flex:none;border:0.2mm solid rgba(0,0,0,.4);border-radius:0.4mm}
-.leg li.expl{display:block;font-size:6.1pt;color:#333;line-height:1.3;column-span:all;margin-top:0.6mm;border-top:0.2mm solid #ddd;padding-top:0.8mm}
+.leg li.expl{display:block;font-size:5.9pt;color:#333;line-height:1.3;column-span:all;margin-top:0.6mm;border-top:0.2mm solid #ddd;padding-top:0.8mm}
 .leg .fdem{display:inline-block;width:8mm;height:3.6mm;border:0.2mm solid rgba(0,0,0,.4);vertical-align:middle;margin-right:1.6mm}
-.chk{margin:2.2mm 3mm 0;font-size:8pt;font-weight:bold;padding:1.1mm 2mm;border:0.35mm solid;text-align:center}
+.chk{margin:1.6mm 3mm 0;font-size:7.6pt;font-weight:bold;padding:0.9mm 2mm;border:0.35mm solid;text-align:center}
 .chk.ok{color:#176d2a;background:#eaf6ea;border-color:#176d2a}
 .chk.bad{color:#b00020;background:#fdecec;border-color:#b00020}
 
@@ -170,13 +176,16 @@ body.adm #lusuario{display:flex}
   <p>Feriado, ponto facultativo e recesso não contam como dias letivos (a conferência do rodapé considera isso).</p>
   <h3>Imprimir em 1 página A3 retrato</h3>
   <p>Ctrl+P &gt; papel <b>A3</b> &gt; orientação <b>Retrato</b> &gt; margens <b>Padrão</b> &gt; marque <b>Gráficos de fundo</b> e desmarque <b>Cabeçalhos e rodapés</b>. Se o conteúdo exceder 1 página, ele é reduzido automaticamente (um aviso aparece na barra acima).</p>
+  <h3>Cabeçalho oficial (imagem)</h3>
+  <p>O cabeçalho é o PNG oficial (<code>image/cab_calendario_2027.png</code>, 1480×360). A página procura primeiro o caminho relativo — que funciona no GitHub Pages com a pasta <code>image/</code> do repositório — e depois o link direto do GitHub; se nenhum carregar (ex.: arquivo aberto do computador sem internet), entra automaticamente o cabeçalho textual laranja. Para trocar a imagem no ano seguinte, substitua o PNG na pasta <code>image/</code> do repositório ou edite <code>CONFIG.imgCabecalho</code> no código.</p>
   <h3>Publicar (GitHub Pages)</h3>
   <p>Salve este arquivo como <code>index.html</code> em um repositório e ative o Pages (Settings &gt; Pages). Qualquer pessoa acessa pelo link. A ordem de leitura dos dados é: <b>1º</b> <code>?csv=LINK</code> (se presente na barra de endereço), <b>2º</b> Supabase (se <code>CONFIG.supabase</code> estiver preenchido), <b>3º</b> <code>CONFIG.csvUrl</code> ou dados de exemplo embutidos — sempre atualizados ao recarregar a página.</p>
 </div>
 
 <div class="stage">
   <div class="papel" id="papel">
-    <div class="banner">
+    <img id="cabImg" class="cabimg" hidden alt="Calendário da Rede Municipal de Ensino de Joinville — Ensino Fundamental e Educação Infantil — 2027">
+    <div class="banner" id="bannerTxt">
       <div class="ano" id="ano">2027</div>
       <div class="tt">
         <h1 id="titulo">Calendário da Rede Municipal de Ensino de Joinville</h1>
@@ -249,6 +258,12 @@ const CONFIG = {
      escrita é garantida pelas políticas RLS criadas no script SQL).
      Enquanto estiver vazio, a página usa os dados de exemplo embutidos. */
   supabase: { url: "https://jgxabbwyomoablbsbubn.supabase.co", key: "sb_publishable__TfexKHMBWmC0ukdPUGmMg_kOoaMAiq" },
+  /* Cabeçalho oficial em PNG (1480×360). O 1º caminho é relativo e funciona
+     no GitHub Pages com a pasta image/ do repositório; o 2º é o link direto
+     do arquivo no GitHub, usado como reserva quando o arquivo é aberto
+     isolado. Se nenhum carregar, mostra o cabeçalho textual (banner laranja). */
+  imgCabecalho: ["image/cab_calendario_2027.png",
+                 "https://raw.githubusercontent.com/sed-ndi/calendario/refs/heads/main/image/cab_calendario_2027.png"],
   semestresEI: [["1º Semestre","2027-02-10","2027-07-16"],["2º Semestre","2027-08-02","2027-12-21"]],
   trimestresEF: [["1º Trimestre","2027-02-10","2027-05-14"],["2º Trimestre","2027-05-17","2027-09-17"],["3º Trimestre","2027-09-20","2027-12-21"]]
 };
@@ -602,6 +617,7 @@ function render(porMes, fonte){
   document.getElementById("ano").textContent = CONFIG.ano;
   document.getElementById("titulo").textContent = CONFIG.titulo;
   document.getElementById("subtitulo").textContent = CONFIG.subtitulo;
+  document.getElementById("cabImg").alt = `${CONFIG.titulo} — ${CONFIG.subtitulo} — ${CONFIG.ano}`;
   document.title = `Calendário Escolar ${CONFIG.ano} — Rede Municipal de Joinville`;
   document.getElementById("meses").innerHTML = MESES.map((_, m) => mesHTML(m, porMes[m])).join("");
   document.getElementById("rodape").innerHTML = rodape(porMes);
@@ -619,12 +635,30 @@ function render(porMes, fonte){
   document.getElementById("avisos").textContent = AVISOS.join("\n");
 }
 
-/* Encolhe a lista de eventos de cada mês até caber no espaço fixo */
+/* Ajusta a lista de eventos de cada mês: usa o nível de fonte mais legível
+   que caiba no bloco padrão (20mm). Se o mês for muito cheio e nada couber,
+   o bloco cresce o necessário até o teto de 23.6mm em vez de cortar eventos
+   (os meses vizinhos da mesma linha apenas ficam com espaço em branco).
+   Só corta ("+ N evento(s)") se nem com o teto couber. */
 function encolherListas(){
+  const passos = ["", "compacta", "compacta duas", "micro duas", "micro tres"];
+  const TETO = 23.6 * 96 / 25.4;   // limite de crescimento do bloco, em px
   document.querySelectorAll(".evwrap").forEach(wrap => {
     const ul = wrap.querySelector("ul");
-    const passos = ["", "compacta", "compacta duas", "micro duas"];
-    for (const p of passos){ ul.className = "ev-list " + p; if (ul.scrollHeight <= wrap.clientHeight + 1) return; }
+    wrap.style.height = "";        // volta à altura padrão do CSS
+    let passo = "", coube = false;
+    for (const p of passos){ ul.className = "ev-list " + p; if (ul.scrollHeight <= wrap.clientHeight + 1){ passo = p; coube = true; break; } }
+    if (!coube){
+      wrap.style.height = "auto";  // mede sem o corte do overflow
+      for (const p of passos){
+        ul.className = "ev-list " + p;
+        if (ul.scrollHeight <= TETO){ wrap.style.height = ul.scrollHeight + "px"; passo = p; coube = true; break; }
+      }
+    }
+    if (coube){ ul.className = "ev-list " + passo; return; }
+    /* nem com o teto: corta do fim até caber e avisa com "+ N evento(s)" */
+    wrap.style.height = "";
+    ul.className = "ev-list micro tres";
     const itens = [...ul.children];
     for (let fim = itens.length - 1; fim > 0; fim--){
       itens[fim].remove();
@@ -633,7 +667,7 @@ function encolherListas(){
         li.className = "maisl";
         li.textContent = `+ ${itens.length - fim} evento(s) iniciam neste mês`;
         ul.appendChild(li);
-        return;
+        break;
       }
     }
   });
@@ -643,7 +677,7 @@ function encolherListas(){
 function recalcular(){
   const papel = document.getElementById("papel"), stage = document.querySelector(".stage");
   stage.style.setProperty("--ztela", 1);
-  const dispH = 407 / 25.4 * 96;             // altura útil da página A3 (408mm menos folga)
+  const dispH = 409 / 25.4 * 96;             // altura útil da página A3 (420mm − 2×5mm de margem, menos folga)
   const h = papel.offsetHeight, w = papel.offsetWidth;
   let zimp = 1;
   if (h > dispH) zimp = Math.max(0.75, dispH / h * 0.998);
@@ -972,6 +1006,21 @@ document.addEventListener("keydown", e => {
 document.getElementById("mLogin").addEventListener("keydown", e => {
   if (e.key === "Enter") entrar();
 });
+/* ============================ cabeçalho em PNG ============================
+   Tenta os caminhos de CONFIG.imgCabecalho em ordem; o primeiro que carregar
+   substitui o banner textual. Ao carregar, recalcula a escala da folha —
+   o PNG é mais alto que o banner textual e a página tem de continuar em 1
+   página A3. Nenhum carregou → o banner textual permanece. */
+function carregarCabecalho(i){
+  const img = document.getElementById("cabImg");
+  const caminhos = CONFIG.imgCabecalho || [];
+  if (i >= caminhos.length) return;
+  img.onload = () => { img.hidden = false; document.getElementById("bannerTxt").hidden = true; recalcular(); };
+  img.onerror = () => { img.onload = img.onerror = null; carregarCabecalho(i + 1); };
+  img.src = caminhos[i];
+}
+carregarCabecalho(0);
+
 let rAF = 0;
 window.addEventListener("resize", () => { cancelAnimationFrame(rAF); rAF = requestAnimationFrame(recalcular); });
 init();
