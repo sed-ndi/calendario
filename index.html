@@ -596,7 +596,7 @@ async function buscarSupabase(){
   const cab = {apikey: CONFIG.supabase.key};
   if (/^eyJ/.test(CONFIG.supabase.key)) cab.Authorization = "Bearer " + CONFIG.supabase.key;
   const pega = async rota => {
-    const r = await fetch(base + rota + (rota.includes("?") ? "&" : "?") + "t=" + Date.now(), {headers: cab});
+    const r = await fetch(base + rota, {headers: cab});
     if (!r.ok){
       let msg = "HTTP " + r.status + " em " + rota.split("?")[0];
       try { const j = await r.json(); if (j.message) msg += ": " + j.message; } catch (_) {}
