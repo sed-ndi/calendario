@@ -111,6 +111,7 @@ td.t{background:#ffff66;font-weight:bold}
 body.adm .chk{display:block}
 .chk.ok{color:#176d2a;background:#eaf6ea;border-color:#176d2a}
 .chk.bad{color:#b00020;background:#fdecec;border-color:#b00020}
+.chk.neutro{color:#444;background:#f2f2f2;border-color:#444}
 @media print{.chk{display:none!important}}
 
 /* ---------- login e editor de eventos (fase 2 — só aparecem na tela) ---------- */
@@ -149,6 +150,9 @@ body.adm #lusuario{display:flex}
 .mcard .plinha{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px;margin:0 0 6px}
 .mcard .plinha input{padding:5px 6px;font-size:13px}
 .mcard .aviso{background:#fffceb;border:1px solid #e0d68a;color:#6b5900;font-size:12.5px;padding:7px 9px;border-radius:3px;margin-top:8px}
+.mcard .estado{padding:6px 0;font-size:13px;color:#333}
+.mcard .criar{border-top:1px solid #dfe6ee;margin-top:12px;padding-top:2px}
+.mbotoes button:disabled{opacity:.45;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -175,8 +179,9 @@ body.adm #lusuario{display:flex}
   <p>Com o projeto Supabase criado e o script <code>supabase_fase1.sql</code> executado, preencha <code>CONFIG.supabase</code> com a <b>URL</b> e a chave <b>anon public</b> (Settings &gt; API do projeto). A página passa a ler as tabelas <code>eventos</code>, <code>categorias</code> e <code>configuracoes</code>: visitantes têm só leitura (RLS); a escrita é liberada ao entrar com conta admin (ver abaixo). Enquanto esses campos estiverem vazios, a página usa os dados de exemplo embutidos.</p>
   <h3>Editar o calendário (login admin)</h3>
   <p>As contas são criadas manualmente no painel do Supabase: <b>Authentication → Users → Add user</b> (email + senha; o cadastro público fica desligado). Depois clique em <b>Entrar</b> na barra e informe o email e a senha. Com a sessão ativa, <b>duplo clique</b> em um dia abre o editor: escolha um evento para alterar (início, fim, título, categoria, etapa, dia letivo) ou crie um novo; ao salvar, o banco é atualizado e o calendário redesenha na hora. Eventos de período não pintam sábado/domingo nem categorias fortes — as mesmas regras do CSV valem aqui. A sessão fica guardada neste navegador e é renovada automaticamente; use <b>Sair</b> em computadores compartilhados. A edição só é possível com dados vindos do Supabase (não com <code>?csv=</code> ou arquivo local).</p>
-  <h3>Configurações do calendário (fase 3)</h3>
-  <p>Com a sessão admin ativa, o botão <b>Configurações</b> abre o painel da tabela <code>configuracoes</code> (id=1): <b>ano</b>, <b>título</b>, <b>subtítulo</b>, os <b>2 semestres</b> da Educação Infantil, os <b>3 trimestres</b> do Ensino Fundamental e os <b>caminhos do PNG do cabeçalho</b>. Antes de usar, execute o script <code>supabase_fase3.sql</code> (não destrutivo — cria só a coluna nova <code>img_cabecalho</code> e garante a linha id=1). Ao salvar, o banco é atualizado (PATCH com o token do admin) e o calendário é relido: título, contagens por mês, tabela de períodos e conferência de dias letivos refletem a mudança na hora. Validações: ano entre 2000 e 2100, todos os períodos com nome e datas dentro do ano escolhido, fim nunca antes do início. Como no editor de eventos, salvar exige que os dados em tela venham do Supabase (não com <code>?csv=</code> ou arquivo local); a troca de imagem do cabeçalho vale na próxima leitura do banco (ou em <b>Recarregar dados</b>).</p>
+  <h3>Configurações e anos letivos (fases 3-4)</h3>
+  <p>Com a sessão admin ativa, o botão <b>Configurações</b> abre o painel da tabela <code>configuracoes</code> — que guarda <b>uma linha por ano</b> (id = ano): título, subtítulo, os <b>2 semestres</b> da Educação Infantil, os <b>3 trimestres</b> do Ensino Fundamental e os <b>caminhos do PNG do cabeçalho</b>. Antes de usar, execute os scripts <code>supabase_fase3.sql</code> (coluna <code>img_cabecalho</code>) e <code>supabase_fase4.sql</code> (coluna <code>ativo</code> e migração id=ano) — ambos não destrutivos.</p>
+  <p><b>Virada de ano</b>: os eventos de todos os anos coexistem no banco e cada ano tem configuração própria, então não é preciso apagar nada para começar o ano seguinte. No painel, <b>Criar outro ano</b> cria a configuração do ano novo com os períodos letivos copiados e as datas deslocadas (29/02 vira 28/02 em ano não bissexto) e, se marcado, <b>importa os eventos</b> do ano em tela trocando o ano nas datas — depois basta retocar no editor as datas que mudaram (feriados, recessos). O ano novo nasce como <b>rascunho</b>: os visitantes continuam vendo o ano publicado até você clicar em <b>Tornar este o ano atual</b>. Para conferir um rascunho, use <code>?ano=2028</code> na barra de endereço — a fonte na barra indica <code>(publicado)</code> ou <code>(rascunho)</code>. Eventos de outros anos cadastrados são filtrados em silêncio; só uma data de ano <b>não cadastrado</b> (erro de digitação) gera aviso. Ao salvar, validações: todos os períodos com nome e datas dentro do ano escolhido, fim nunca antes do início. Salvar/publicar exige dados vindos do Supabase (não com <code>?csv=</code> ou arquivo local).</p>
   <h3>Conectar à planilha Google</h3>
   <p>Na planilha: <b>Arquivo &gt; Compartilhar &gt; Publicar na web</b> &gt; escolha a aba de <b>eventos</b> &gt; formato <b>CSV</b> &gt; Publicar. Copie o link gerado e cole em <code>CONFIG.csvUrl</code> (no código deste arquivo) ou abra esta página com <code>?csv=LINK</code> no endereço.</p>
   <h3>Colunas esperadas na aba de eventos</h3>
@@ -257,16 +262,27 @@ body.adm #lusuario{display:flex}
   </div>
 </div>
 
-<!-- ---------- painel de configurações (fase 3, não sai na impressão) ---------- -->
+<!-- ---------- painel de configurações multi-ano (fases 3-4, não sai na impressão) ---------- -->
 <div class="modal no-print" id="mConfig" hidden>
   <div class="mcard">
     <h3>Configurações do calendário</h3>
     <div class="aviso" id="cfgAviso" hidden></div>
     <div class="mlinha">
-      <div style="flex:0 0 96px"><label>Ano</label><input type="number" id="cfgAno" min="2000" max="2100"></div>
-      <div><label>Subtítulo</label><input id="cfgSub" maxlength="200"></div>
+      <div style="flex:0 0 118px"><label>Ano em edição</label><select id="cfgAnoSel"></select></div>
+      <div><label>Estado deste ano</label><div class="estado" id="cfgEstado"></div></div>
+    </div>
+    <div class="mbotoes" style="margin:10px 0 0">
+      <button class="msec" id="cfgPublicar" onclick="publicarAno()" title="Publica este ano para os visitantes e tira os outros da publicação">Tornar este o ano atual</button>
+      <button class="msec" onclick="mostrarCriarAno()">Criar outro ano…</button>
+    </div>
+    <div class="criar" id="cfgCriar" hidden>
+      <label>Novo ano</label><input type="number" id="cfgNovoAno" min="2000" max="2100">
+      <label class="mchk"><input type="checkbox" id="cfgCopiarPer" checked><span>Copiar os períodos letivos do ano <b id="cfgBasePer"></b> com as datas ajustadas ao novo ano</span></label>
+      <label class="mchk"><input type="checkbox" id="cfgImportarEv"><span>Importar os eventos do ano <b id="cfgBaseEv"></b> trocando o ano nas datas (29/02 vira 28/02 quando o novo ano não é bissexto)</span></label>
+      <div class="mbotoes"><button class="mprim" onclick="criarAno()">Criar ano</button></div>
     </div>
     <label>Título</label><input id="cfgTit" maxlength="200">
+    <label>Subtítulo</label><input id="cfgSub" maxlength="200">
     <div class="grot">Semestres — Educação Infantil</div>
     <div class="plinha"><input id="cfgSem0n" maxlength="80" placeholder="Nome"><input type="date" id="cfgSem0i"><input type="date" id="cfgSem0f"></div>
     <div class="plinha"><input id="cfgSem1n" maxlength="80" placeholder="Nome"><input type="date" id="cfgSem1i"><input type="date" id="cfgSem1f"></div>
@@ -486,8 +502,14 @@ function parseCSV(t){
 let EVENTOS = [], AVISOS = [], INI = 0, FIM = 0;
 let fonteAtual = "";   /* ex.: "Supabase · lido às ..." — controla se o editor pode abrir */
 const POR_DIA = new Map();
+/* multi-ano (fase 4): ANOS = anos cadastrados no banco [{ano, ativo}];
+   ANOS_RAW = linhas completas de configuracoes (para o painel);
+   anoEscolhido = ano forçado em tela (?ano= na URL ou escolha no painel);
+   avisoUmaVez = mensagem mostrada uma única vez no próximo desenho */
+let ANOS = [], ANOS_RAW = [], anoEscolhido = null, avisoUmaVez = "";
+let CATS_BANCO = new Set();   /* chaves de categorias que existem no banco (FK na importação) */
 
-function buildEventos(csv){
+function buildEventos(csv, permiteVazio){
   AVISOS = []; EVENTOS = []; POR_DIA.clear();
   const linhas = parseCSV(csv);
   if (!linhas.length) throw new Error("CSV vazio");
@@ -516,12 +538,23 @@ function buildEventos(csv){
       AVISOS.push(`Linha ${i+2}: etapa "${g("etapa")}" não reconhecida (use EI, EF ou vazio) em "${titulo}"`);
     const letivo = !/^(n|nao|não|false|f|0|no)$/i.test(g("letivo"));
     const add = (ini, fim) => {
+      /* multi-ano (fase 4): os eventos de todos os anos coexistem no banco e a
+         página exibe só os do ano em tela. Eventos de outros anos cadastrados
+         são filtrados em silêncio (sem a chuva de avisos da troca de ano);
+         ano ÓRFÃO (fora de CONFIG.ano e sem linha de configurações no banco —
+         quase sempre erro de digitação na data) continua gerando aviso. */
+      if (fim < CONFIG.ano*10000+101 || ini > CONFIG.ano*10000+1231){
+        const anoEv = Math.floor(ini/10000);
+        if (!ANOS.length)
+          AVISOS.push(`Linha ${i+2}: "${titulo}" (${pd2br(ini)}) está fora do ano ${CONFIG.ano} e não será exibido`);
+        else if (!ANOS.some(a => a.ano === anoEv))
+          AVISOS.push(`Linha ${i+2}: "${titulo}" (${pd2br(ini)}) está no ano ${anoEv}, que não existe no banco — verifique a data`);
+        return;
+      }
       const idTxt = cId >= 0 ? (r[cId]||"").trim() : "";
       EVENTOS.push({ini, fim, titulo, cat, etapa, letivo,
         id: /^\d+$/.test(idTxt) ? +idTxt : null,          /* id do banco p/ editar/excluir */
         rawIni: (r[cIni]||"").trim(), rawFim: (cFim >= 0 ? (r[cFim]||"").trim() : "")});
-      if (fim < CONFIG.ano*10000+101 || ini > CONFIG.ano*10000+1231)
-        AVISOS.push(`Linha ${i+2}: "${titulo}" (${pd2br(ini)}) está fora do ano ${CONFIG.ano} e não será exibido`);
     };
     if (datas.length > 1) datas.forEach(v => add(v, v));
     else {
@@ -531,6 +564,17 @@ function buildEventos(csv){
     }
   });
   EVENTOS.sort((a,b) => a.ini - b.ini || a.fim - b.fim);
+  /* Ano sem eventos (fase 4): anos novos nascem vazios no banco — desenhar os
+     12 meses em branco em vez de erro, para começar a cadastrar pelo editor.
+     Em CSV/planilha continua sendo erro, como antes. */
+  if (!EVENTOS.length){
+    if (permiteVazio){
+      INI = 0; FIM = 0;
+      AVISOS.push(`Nenhum evento cadastrado para o ano ${CONFIG.ano} — o calendário está vazio`);
+      return;
+    }
+    throw new Error("Nenhum evento válido no CSV");
+  }
   /* Eventos de período (ini diferente de fim) só marcam dias de semana: sábado e
      domingo ficam sem cor, pois o evento não ocorre no fim de semana. Datas únicas
      (ini = fim, inclusive as vindas de várias datas na coluna inicio) marcam qualquer dia. */
@@ -541,7 +585,6 @@ function buildEventos(csv){
   const ife = EVENTOS.filter(e => e.cat === "inicio_fim");
   if (ife.length){ INI = Math.min(...ife.map(e => e.ini)); FIM = Math.max(...ife.map(e => e.fim)); }
   else { INI = CONFIG.ano*10000+101; FIM = CONFIG.ano*10000+1231; AVISOS.push("Nenhum evento da categoria inicio_fim — assumido o ano civil inteiro"); }
-  if (!EVENTOS.length) throw new Error("Nenhum evento válido no CSV");
 }
 const pd2br = v => `${p2(v%100)}/${p2(Math.floor(v/100)%100)}`;
 
@@ -648,7 +691,7 @@ function rodape(porMes){
   const per = [
     ...CONFIG.semestresEI.map(([n,i,f]) => ({n: n+" (E.I.)", pi: pd(i), pf: pd(f), d: contarPeriodo(pd(i), pd(f), "EI")})),
     ...CONFIG.trimestresEF.map(([n,i,f]) => ({n: n+" (E.F.)", pi: pd(i), pf: pd(f), d: contarPeriodo(pd(i), pd(f), "EF")}))
-  ];
+  ].filter(x => x.pi && x.pf);   /* períodos ainda não configurados (ano novo) ficam de fora */
   const linhasPer = per.map(x => `<tr><td style="text-align:left">${x.n}</td><td>${br(x.pi)} a ${br(x.pf)}</td><td class="t">${x.d}</td></tr>`).join("");
   const leg = Object.values(CATS).map(([n,c]) => `<li><i style="background:${c}"></i>${n}</li>`).join("");
   return `<div><div class="blocotit">Dias letivos por mês</div>
@@ -671,13 +714,21 @@ function render(porMes, fonte){
   document.getElementById("meses").innerHTML = MESES.map((_, m) => mesHTML(m, porMes[m])).join("");
   document.getElementById("rodape").innerHTML = rodape(porMes);
   const totEI = porMes.reduce((s,x) => s+x.EI, 0), totEF = porMes.reduce((s,x) => s+x.EF, 0);
-  const sSem = CONFIG.semestresEI.reduce((s,[,i,f]) => s+contarPeriodo(pd(i), pd(f), "EI"), 0);
-  const sTri = CONFIG.trimestresEF.reduce((s,[,i,f]) => s+contarPeriodo(pd(i), pd(f), "EF"), 0);
   const chk = document.getElementById("chk");
-  if (sSem === totEI && sTri === totEF && (totEI || totEF))
-    chk.className = "chk ok", chk.innerHTML = `OK — Dias letivos conferem: E.I. ${totEI} no ano (semestres somam ${sSem}) e E.F. ${totEF} no ano (trimestres somam ${sTri}) — meses e períodos batem`;
-  else
-    chk.className = "chk bad", chk.innerHTML = `VERIFICAR — Meses somam E.I. ${totEI} / E.F. ${totEF}; períodos somam E.I. ${sSem} / E.F. ${sTri}. Confira feriados, ponto facultativo, recesso e as datas dos períodos no CONFIG`;
+  const semOk = CONFIG.semestresEI.length > 0 && CONFIG.semestresEI.every(p => Array.isArray(p) && pd(p[1]) && pd(p[2]));
+  const triOk = CONFIG.trimestresEF.length > 0 && CONFIG.trimestresEF.every(p => Array.isArray(p) && pd(p[1]) && pd(p[2]));
+  if (!EVENTOS.length)
+    chk.className = "chk neutro", chk.innerHTML = `Ano ${CONFIG.ano} sem eventos — cadastre-os pelo editor (duplo clique no dia, logado como admin) e configure os períodos letivos no painel Configurações; a conferência abaixo fica ativa depois`;
+  else if (!semOk || !triOk)
+    chk.className = "chk neutro", chk.innerHTML = "Conferência de dias letivos inativa — cadastre os 2 semestres (E.I.) e os 3 trimestres (E.F.) no painel Configurações";
+  else {
+    const sSem = CONFIG.semestresEI.reduce((s,[,i,f]) => s+contarPeriodo(pd(i), pd(f), "EI"), 0);
+    const sTri = CONFIG.trimestresEF.reduce((s,[,i,f]) => s+contarPeriodo(pd(i), pd(f), "EF"), 0);
+    if (sSem === totEI && sTri === totEF && (totEI || totEF))
+      chk.className = "chk ok", chk.innerHTML = `OK — Dias letivos conferem: E.I. ${totEI} no ano (semestres somam ${sSem}) e E.F. ${totEF} no ano (trimestres somam ${sTri}) — meses e períodos batem`;
+    else
+      chk.className = "chk bad", chk.innerHTML = `VERIFICAR — Meses somam E.I. ${totEI} / E.F. ${totEF}; períodos somam E.I. ${sSem} / E.F. ${sTri}. Confira feriados, ponto facultativo, recesso e as datas dos períodos no painel Configurações`;
+  }
   encolherListas();
   recalcular();
   document.getElementById("fonte").textContent = `${fonte} · ${EVENTOS.length} eventos · ${INI === 0 ? "" : "ano letivo " + pd2br(INI) + " a " + pd2br(FIM)}`;
@@ -738,14 +789,15 @@ function recalcular(){
 }
 
 /* ============================ carga de dados ============================ */
-function carregar(csv, fonte){
+function carregar(csv, fonte, permiteVazio){
   fonteAtual = fonte;
-  try { buildEventos(csv); }
+  try { buildEventos(csv, permiteVazio); }
   catch (err){
     document.getElementById("fonte").textContent = "Erro ao ler os dados: " + err.message;
     document.getElementById("avisos").textContent = "Corrija o CSV ou clique em Recarregar para voltar aos dados de exemplo.";
     return;
   }
+  if (avisoUmaVez){ AVISOS.unshift(avisoUmaVez); avisoUmaVez = ""; }
   const porMes = MESES.map((_, m) => ({EI: contarMes(m, "EI"), EF: contarMes(m, "EF")}));
   render(porMes, fonte);
 }
@@ -775,31 +827,50 @@ async function buscarSupabase(){
   };
   const [cats, cfgs, evs] = await Promise.all([
     pega("/rest/v1/categorias?select=chave,nome,cor,ordem&order=ordem.asc"),
-    pega("/rest/v1/configuracoes?select=*&id=eq.1"),
+    pega("/rest/v1/configuracoes?select=*&order=ano.asc"),
     pega("/rest/v1/eventos?select=id,inicio,fim,titulo,categoria,etapa,letivo&order=id.asc")
   ]);
-  /* categorias do banco alimentam a legenda (cores editáveis no futuro painel) */
+  /* categorias do banco alimentam a legenda (cores editáveis no futuro painel);
+     as chaves do banco também filtram a importação de eventos (FK categorias) */
   cats.forEach(c => { if (c.chave) CATS[c.chave] = [c.nome || c.chave, c.cor || "#cccccc"]; });
-  /* configurações do banco substituem ano, título, períodos e imagem do cabeçalho */
-  if (cfgs && cfgs.length){
-    const c = cfgs[0];
-    if (c.ano) CONFIG.ano = +c.ano || CONFIG.ano;
-    if (c.titulo) CONFIG.titulo = c.titulo;
-    if (c.subtitulo) CONFIG.subtitulo = c.subtitulo;
-    if (Array.isArray(c.semestres_ei) && c.semestres_ei.length) CONFIG.semestresEI = c.semestres_ei;
-    if (Array.isArray(c.trimestres_ef) && c.trimestres_ef.length) CONFIG.trimestresEF = c.trimestres_ef;
-    if (Array.isArray(c.img_cabecalho) && c.img_cabecalho.length){
-      CONFIG.imgCabecalho = c.img_cabecalho.map(String);
+  CATS_BANCO = new Set((Array.isArray(cats) ? cats : []).map(c => c.chave).filter(Boolean));
+  /* multi-ano (fase 4): configuracoes tem UMA LINHA POR ANO (id = ano, coluna
+     ativo). O ano exibido é, nesta ordem: ?ano= da URL (ou escolha feita no
+     painel) → o ano publicado (ativo) → o maior ano cadastrado → o padrão do
+     código. Antes do supabase_fase4.sql rodar, a linha antiga (id=1, sem
+     "ativo") continua funcionando: cai na regra do maior ano cadastrado. */
+  ANOS_RAW = Array.isArray(cfgs) ? cfgs : [];
+  ANOS = ANOS_RAW.map(c => ({ano: +c.ano || 0, ativo: !!c.ativo}))
+    .filter(a => a.ano >= 2000 && a.ano <= 2100).sort((a,b) => a.ano - b.ano);
+  const linhaDo = a => ANOS_RAW.find(c => +c.ano === a) || null;
+  let linha = null;
+  if (anoEscolhido){ CONFIG.ano = anoEscolhido; linha = linhaDo(anoEscolhido); }
+  else if (ANOS.some(a => a.ativo)){ linha = ANOS_RAW.find(c => c.ativo) || null; if (linha) CONFIG.ano = +linha.ano; }
+  else if (ANOS.length){ CONFIG.ano = ANOS[ANOS.length-1].ano; linha = linhaDo(CONFIG.ano); }
+  /* a linha do ano escolhido substitui título, subtítulo, períodos e imagem do
+     cabeçalho (períodos vazios = ano novo ainda sem períodos configurados) */
+  if (linha){
+    if (linha.titulo) CONFIG.titulo = linha.titulo;
+    if (linha.subtitulo) CONFIG.subtitulo = linha.subtitulo;
+    CONFIG.semestresEI = Array.isArray(linha.semestres_ei) ? linha.semestres_ei : [];
+    CONFIG.trimestresEF = Array.isArray(linha.trimestres_ef) ? linha.trimestres_ef : [];
+    if (Array.isArray(linha.img_cabecalho) && linha.img_cabecalho.length){
+      CONFIG.imgCabecalho = linha.img_cabecalho.map(String);
       /* se os caminhos mudaram em relação ao que já foi tentado, tenta de novo
          (ex.: troca do PNG na virada do ano) — se já são os mesmos, nada muda */
       tentarCabecalhoSeMudou();
     }
+  } else if (anoEscolhido && ANOS.length){
+    avisoUmaVez = `Ano ${anoEscolhido} ainda não tem configuração no banco — usando os valores padrão do código (configure-o no painel Configurações).`;
   }
   /* eventos → linhas de CSV (com aspas quando o texto tem vírgula ou aspas).
-     O id vai na última coluna: é a chave do banco para o editor (fase 2). */
+     O id vai na última coluna: é a chave do banco para o editor (fase 2).
+     Eventos de TODOS os anos vêm na leitura (coexistem no banco) e o
+     buildEventos exibe só os do ano em tela. */
   const qcsv = x => { x = String(x == null ? "" : x); return /[",\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; };
   const linhas = evs.map(e => [e.inicio, e.fim, e.titulo, e.categoria, e.etapa, e.letivo === false ? "n" : "", e.id].map(qcsv).join(","));
-  if (!linhas.length) throw new Error("tabela de eventos vazia");
+  /* ano novo criado sem eventos: CSV só com o cabeçalho — buildEventos
+     (com permiteVazio) desenha o calendário vazio em vez de dar erro */
   return "inicio,fim,titulo,categoria,etapa,letivo,id\n" + linhas.join("\n");
 }
 
@@ -993,21 +1064,62 @@ async function excluirEvento(){
   await recarregarDadosSupabase();
 }
 
+/* linha de fonte com o ano em tela e o estado de publicação (fase 4);
+   sem nenhum ano publicado (banco pré-fase4) não etiqueta nada */
+const fonteSupabase = () => {
+  const ativos = ANOS.filter(a => a.ativo);
+  const pub = ativos.length ? (ativos.some(a => a.ano === CONFIG.ano) ? "publicado" : "rascunho") : "";
+  return "Supabase · " + CONFIG.ano + (pub ? " (" + pub + ")" : "") + " · lido às " + new Date().toLocaleTimeString("pt-BR");
+};
+
 async function recarregarDadosSupabase(){
   try {
     const csv = await buscarSupabase();
-    carregar(csv, "Supabase · lido às " + new Date().toLocaleTimeString("pt-BR"));
+    carregar(csv, fonteSupabase(), true);
   } catch (e){
     document.getElementById("avisos").textContent = "Falha ao recarregar o Supabase: " + e.message;
   }
 }
 
-/* ============================ configurações (fase 3) ============================
-   Ano, título, subtítulo, semestres E.I., trimestres E.F. e caminhos do PNG do
-   cabeçalho vivem na tabela configuracoes (id=1) — mesma fonte que a página já
-   lê desde a fase 1. O painel só aparece logado como admin; ao salvar, o PATCH
-   atualiza o banco e o calendário é relido do Supabase (recarregarDadosSupabase).
-   Como no editor de eventos, salvar exige que os dados em tela venham do banco. */
+/* ============================ configurações multi-ano (fases 3-4) ============================
+   Uma linha de configuracoes POR ANO (id = ano, coluna ativo). O painel edita
+   o ano escolhido no seletor: título, subtítulo, semestres E.I., trimestres
+   E.F. e caminhos do PNG do cabeçalho. Fluxo de virada de ano: "Criar outro
+   ano" cria a configuração do ano novo (períodos copiados com as datas
+   deslocadas) e pode importar os eventos do ano em tela trocando o ano nas
+   datas; "Tornar este o ano atual" publica o ano para os visitantes. Como no
+   editor de eventos, tudo exige que os dados em tela venham do Supabase. */
+function preencherCamposConfig(ano){
+  const linha = ANOS_RAW.find(c => +c.ano === ano) || null;
+  document.getElementById("cfgTit").value = linha ? (linha.titulo || "") : CONFIG.titulo;
+  document.getElementById("cfgSub").value = linha ? (linha.subtitulo || "") : CONFIG.subtitulo;
+  const sem = linha ? (Array.isArray(linha.semestres_ei) ? linha.semestres_ei : []) : CONFIG.semestresEI;
+  const tri = linha ? (Array.isArray(linha.trimestres_ef) ? linha.trimestres_ef : []) : CONFIG.trimestresEF;
+  [["cfgSem", sem, 2], ["cfgTri", tri, 3]].forEach(([p, lista, n]) => {
+    for (let i = 0; i < n; i++){
+      const r = Array.isArray(lista[i]) ? lista[i] : ["", "", ""];
+      document.getElementById(p + i + "n").value = r[0] || "";
+      document.getElementById(p + i + "i").value = /^\d{4}-\d{2}-\d{2}$/.test(r[1] || "") ? r[1] : "";
+      document.getElementById(p + i + "f").value = /^\d{4}-\d{2}-\d{2}$/.test(r[2] || "") ? r[2] : "";
+    }
+  });
+  const img = linha && Array.isArray(linha.img_cabecalho) && linha.img_cabecalho.length ? linha.img_cabecalho : (CONFIG.imgCabecalho || []);
+  document.getElementById("cfgImg0").value = img[0] || "";
+  document.getElementById("cfgImg1").value = img[1] || "";
+}
+
+function atualizarEstadoAno(){
+  const ano = parseInt(document.getElementById("cfgAnoSel").value, 10);
+  const linha = ANOS_RAW.find(c => +c.ano === ano) || null;
+  const ativoAno = (ANOS.find(a => a.ativo) || {}).ano;
+  let txt, publicavel;
+  if (!linha){ txt = "Sem configuração no banco — ao salvar, a configuração deste ano é criada."; publicavel = false; }
+  else if (linha.ativo){ txt = "Publicado — é o ano que os visitantes veem."; publicavel = false; }
+  else { txt = ativoAno ? ("Rascunho — o público continua vendo " + ativoAno + ".") : "Rascunho — nenhum ano está publicado."; publicavel = true; }
+  document.getElementById("cfgEstado").textContent = txt;
+  document.getElementById("cfgPublicar").disabled = !publicavel || !fonteAtual.startsWith("Supabase");
+}
+
 function abrirConfig(){
   document.getElementById("cfgErro").textContent = "";
   const aviso = document.getElementById("cfgAviso");
@@ -1022,28 +1134,37 @@ function abrirConfig(){
       ? "Os dados em tela vieram de \u201C" + fonteAtual + "\u201D — salvar só funciona com dados vindos do Supabase. Feche o painel e clique em Recarregar dados (sem ?csv= na barra de endereço)."
       : "Não há Supabase configurado (CONFIG.supabase no código) — não há onde salvar as configurações.";
   }
-  document.getElementById("cfgAno").value = CONFIG.ano;
-  document.getElementById("cfgTit").value = CONFIG.titulo;
-  document.getElementById("cfgSub").value = CONFIG.subtitulo;
-  [["cfgSem", CONFIG.semestresEI, 2], ["cfgTri", CONFIG.trimestresEF, 3]].forEach(([p, lista, n]) => {
-    for (let i = 0; i < n; i++){
-      const r = Array.isArray(lista[i]) ? lista[i] : ["", "", ""];
-      document.getElementById(p + i + "n").value = r[0] || "";
-      document.getElementById(p + i + "i").value = /^\d{4}-\d{2}-\d{2}$/.test(r[1] || "") ? r[1] : "";
-      document.getElementById(p + i + "f").value = /^\d{4}-\d{2}-\d{2}$/.test(r[2] || "") ? r[2] : "";
-    }
-  });
-  const img = CONFIG.imgCabecalho || [];
-  document.getElementById("cfgImg0").value = img[0] || "";
-  document.getElementById("cfgImg1").value = img[1] || "";
+  /* seletor: anos cadastrados no banco + o ano em tela, se ainda não existe */
+  const anos = [...new Set([...ANOS.map(a => a.ano), CONFIG.ano])].sort((a,b) => a - b);
+  const sel = document.getElementById("cfgAnoSel");
+  sel.innerHTML = anos.map(a => {
+    const r = ANOS_RAW.find(c => +c.ano === a);
+    const rot = !r ? " (sem configuração)" : (r.ativo ? " — publicado" : " — rascunho");
+    return `<option value="${a}">${a}${rot}</option>`;
+  }).join("");
+  sel.value = CONFIG.ano;
+  atualizarEstadoAno();
+  preencherCamposConfig(CONFIG.ano);
+  /* sub-formulário de criação: base = ano em tela; começa fechado */
+  document.getElementById("cfgCriar").hidden = true;
+  document.getElementById("cfgBasePer").textContent = CONFIG.ano;
+  document.getElementById("cfgBaseEv").textContent = CONFIG.ano;
+  document.getElementById("cfgNovoAno").value = Math.max(CONFIG.ano, ANOS.length ? ANOS[ANOS.length-1].ano : 0) + 1;
   abrirModal("mConfig");
+}
+
+function trocarAnoEdicao(){
+  document.getElementById("cfgErro").textContent = "";
+  atualizarEstadoAno();
+  preencherCamposConfig(parseInt(document.getElementById("cfgAnoSel").value, 10));
 }
 
 async function salvarConfig(){
   const erro = document.getElementById("cfgErro");
   erro.textContent = "";
-  const ano = parseInt(document.getElementById("cfgAno").value, 10);
-  if (!(ano >= 2000 && ano <= 2100)){ erro.textContent = "Ano inválido — use um número entre 2000 e 2100."; return; }
+  if (!fonteAtual.startsWith("Supabase")){ erro.textContent = "Salvar só funciona com dados vindos do Supabase."; return; }
+  const ano = parseInt(document.getElementById("cfgAnoSel").value, 10);
+  if (!(ano >= 2000 && ano <= 2100)){ erro.textContent = "Ano inválido."; return; }
   const titulo = document.getElementById("cfgTit").value.trim();
   if (!titulo){ erro.textContent = "O título é obrigatório."; return; }
   const lePeriodos = (p, n) => {
@@ -1068,22 +1189,127 @@ async function salvarConfig(){
   checa(sem, "Semestre"); checa(tri, "Trimestre");
   if (errosData.length){ erro.textContent = errosData.join("\n"); return; }
   const img0 = document.getElementById("cfgImg0").value.trim(), img1 = document.getElementById("cfgImg1").value.trim();
+  const existe = ANOS_RAW.some(c => +c.ano === ano);
   const corpo = {
-    ano, titulo,
+    titulo,
     subtitulo: document.getElementById("cfgSub").value.trim(),
     semestres_ei: sem, trimestres_ef: tri,
     img_cabecalho: [img0, img1].filter(Boolean)
   };
   erro.textContent = "Salvando…";
-  try { await restEscrita("PATCH", "/rest/v1/configuracoes?id=eq.1", corpo); }
-  catch (e){ erro.textContent = "Erro ao salvar: " + e.message + " — o script supabase_fase3.sql já foi executado neste projeto?"; return; }
+  try {
+    if (existe) await restEscrita("PATCH", "/rest/v1/configuracoes?id=eq." + ano, corpo);
+    else await restEscrita("POST", "/rest/v1/configuracoes", {id: ano, ano, ativo: false, ...corpo});
+  } catch (e){ erro.textContent = "Erro ao salvar: " + e.message + " — os scripts supabase_fase3.sql e supabase_fase4.sql já foram executados neste projeto?"; return; }
+  avisoUmaVez = "Configurações do ano " + ano + " salvas" + (existe ? "" : " — configuração criada");
+  fecharModal("mConfig");
+  await recarregarDadosSupabase();
+}
+
+async function publicarAno(){
+  const erro = document.getElementById("cfgErro");
+  erro.textContent = "";
+  if (!fonteAtual.startsWith("Supabase")){ erro.textContent = "Publicar só funciona com dados vindos do Supabase."; return; }
+  const ano = parseInt(document.getElementById("cfgAnoSel").value, 10);
+  const linha = ANOS_RAW.find(c => +c.ano === ano);
+  if (!linha){ erro.textContent = "Este ano ainda não tem configuração no banco — salve-o antes de publicar."; return; }
+  if (linha.ativo){ erro.textContent = "Este ano já está publicado."; return; }
+  const ativoAno = (ANOS.find(a => a.ativo) || {}).ano;
+  if (!confirm("Tornar " + ano + " o ano público? " + (ativoAno ? "O ano " + ativoAno + " deixa de ser exibido para os visitantes." : ""))) return;
+  erro.textContent = "Publicando…";
+  try {
+    await restEscrita("PATCH", "/rest/v1/configuracoes?id=neq." + ano, {ativo: false});
+    await restEscrita("PATCH", "/rest/v1/configuracoes?id=eq." + ano, {ativo: true});
+  } catch (e){ erro.textContent = "Erro ao publicar: " + e.message + " — o script supabase_fase4.sql já foi executado neste projeto?"; return; }
+  avisoUmaVez = "Ano " + ano + " publicado — é o calendário que os visitantes veem";
+  fecharModal("mConfig");
+  await recarregarDadosSupabase();
+}
+
+function mostrarCriarAno(){
+  const box = document.getElementById("cfgCriar");
+  box.hidden = !box.hidden;
+  if (!box.hidden) document.getElementById("cfgNovoAno").focus();
+}
+
+/* troca o ano nas datas de um texto (criação de ano, fase 4):
+   "2027-02-10" → "2028-02-10"; "10/03/2027" → "10/03/2028"; datas sem ano
+   ("05/03", listas "09/04,10/04") ficam como estão — o ano é resolvido na
+   leitura, agora contra o ano novo. 29/02 vira 28/02 quando o ano novo não
+   é bissexto (com aviso). */
+function trocarAnoTxt(txt, anoPara, msgs, rotulo){
+  const bissexto = a => (a % 4 === 0 && a % 100 !== 0) || a % 400 === 0;
+  let out = String(txt || "").trim(), mudou29 = false;
+  out = out.replace(/(\d{4})-(\d{1,2})-(\d{1,2})/g, (m, a, mm, dd) => {
+    if (mm === "02" && dd === "29" && !bissexto(anoPara)){ mudou29 = true; return anoPara + "-02-28"; }
+    return anoPara + "-" + mm + "-" + dd;
+  });
+  out = out.replace(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/g, (m, dd, mm, a) => {
+    if (mm === "02" && dd === "29" && !bissexto(anoPara)){ mudou29 = true; return "28/02/" + anoPara; }
+    return dd + "/" + mm + "/" + anoPara;
+  });
+  if (mudou29) msgs.push("29/02 de \u201C" + rotulo + "\u201D ajustado para 28/02 (" + anoPara + " não é bissexto)");
+  return out;
+}
+
+async function criarAno(){
+  const erro = document.getElementById("cfgErro");
+  erro.textContent = "";
+  if (!fonteAtual.startsWith("Supabase")){ erro.textContent = "Criar ano só funciona com dados vindos do Supabase."; return; }
+  const novo = parseInt(document.getElementById("cfgNovoAno").value, 10);
+  if (!(novo >= 2000 && novo <= 2100)){ erro.textContent = "Ano novo inválido — use um número entre 2000 e 2100."; return; }
+  if (ANOS.some(a => a.ano === novo)){ erro.textContent = "O ano " + novo + " já existe no banco — use o seletor \u201CAno em edição\u201D para editá-lo."; return; }
+  const base = CONFIG.ano;
+  const baseRow = ANOS_RAW.find(c => +c.ano === base) || null;
+  const msgs = [];
+  /* períodos: copiar com as datas deslocadas ao ano novo, ou nascer vazios */
+  let sem = [], tri = [];
+  if (document.getElementById("cfgCopiarPer").checked){
+    const semBase = baseRow ? (Array.isArray(baseRow.semestres_ei) ? baseRow.semestres_ei : []) : CONFIG.semestresEI;
+    const triBase = baseRow ? (Array.isArray(baseRow.trimestres_ef) ? baseRow.trimestres_ef : []) : CONFIG.trimestresEF;
+    sem = semBase.map(([n, i, f]) => [n, trocarAnoTxt(i, novo, msgs, n), trocarAnoTxt(f, novo, msgs, n)]).filter(p => pd(p[1], novo) && pd(p[2], novo));
+    tri = triBase.map(([n, i, f]) => [n, trocarAnoTxt(i, novo, msgs, n), trocarAnoTxt(f, novo, msgs, n)]).filter(p => pd(p[1], novo) && pd(p[2], novo));
+    if (!sem.length && !tri.length) msgs.push("os períodos do ano " + base + " estavam vazios — configure-os depois");
+  }
+  /* eventos: importar trocando o ano nas datas (categorias fora do banco ficam
+     de fora — a tabela categorias tem chave estrangeira) */
+  let evsImport = [];
+  if (document.getElementById("cfgImportarEv").checked){
+    evsImport = EVENTOS.map(e => ({
+      inicio: trocarAnoTxt(e.rawIni, novo, msgs, e.titulo),
+      fim: e.rawFim ? trocarAnoTxt(e.rawFim, novo, msgs, e.titulo) : null,
+      titulo: e.titulo,
+      categoria: e.cat,
+      etapa: e.etapa === "ambos" ? null : e.etapa,
+      letivo: e.letivo
+    }));
+    const antes = evsImport.length;
+    if (CATS_BANCO.size) evsImport = evsImport.filter(ev => CATS_BANCO.has(ev.categoria));
+    if (antes - evsImport.length) msgs.push((antes - evsImport.length) + " evento(s) com categoria inexistente no banco ficaram de fora");
+    if (!evsImport.length) msgs.push("não havia eventos no ano " + base + " para importar");
+  }
+  erro.textContent = "Criando o ano " + novo + "…";
+  const imgBase = baseRow && Array.isArray(baseRow.img_cabecalho) && baseRow.img_cabecalho.length ? baseRow.img_cabecalho : (CONFIG.imgCabecalho || []);
+  const corpoAno = {id: novo, ano: novo, ativo: false,
+    titulo: baseRow ? (baseRow.titulo || CONFIG.titulo) : CONFIG.titulo,
+    subtitulo: baseRow ? (baseRow.subtitulo || "") : CONFIG.subtitulo,
+    semestres_ei: sem, trimestres_ef: tri, img_cabecalho: imgBase};
+  try {
+    await restEscrita("POST", "/rest/v1/configuracoes", corpoAno);
+    if (evsImport.length) await restEscrita("POST", "/rest/v1/eventos", evsImport);
+  } catch (e){ erro.textContent = "Erro ao criar o ano " + novo + ": " + e.message + " — os scripts supabase_fase3.sql e supabase_fase4.sql já foram executados neste projeto?"; return; }
+  avisoUmaVez = "Ano " + novo + " criado" + (evsImport.length ? " — " + evsImport.length + " eventos importados de " + base : " — calendário vazio, pronto para cadastrar") + (msgs.length ? ". " + msgs.join("; ") : "");
+  anoEscolhido = novo;
   fecharModal("mConfig");
   await recarregarDadosSupabase();
 }
 
 async function init(){
   const p = new URLSearchParams(location.search);
-  if (p.get("ano")) CONFIG.ano = parseInt(p.get("ano"), 10) || CONFIG.ano;
+  /* ?ano=YYYY força o ano em tela (preview de rascunho, multi-ano fase 4) */
+  anoEscolhido = parseInt(p.get("ano"), 10) || null;
+  if (anoEscolhido !== null && !(anoEscolhido >= 2000 && anoEscolhido <= 2100)) anoEscolhido = null;
+  if (anoEscolhido) CONFIG.ano = anoEscolhido;
   /* restaura sessão admin salva (renova o token se venceu) */
   sessaoLer();
   if (SESS && !sessaoOk()) await renovarSessao();
@@ -1102,12 +1328,12 @@ async function init(){
   } else if (CONFIG.supabase && CONFIG.supabase.url && CONFIG.supabase.key){
     try {
       csv = await buscarSupabase();
-      fonte = "Supabase · lido às " + new Date().toLocaleTimeString("pt-BR");
+      fonte = fonteSupabase();
     } catch (err){
       fonte = "Falha ao ler o Supabase (" + err.message + ") — exibindo dados de exemplo";
     }
   }
-  carregar(csv, fonte);
+  carregar(csv, fonte, fonte.startsWith("Supabase"));
 }
 
 function baixarExemplo(){
@@ -1140,6 +1366,8 @@ document.addEventListener("keydown", e => {
 document.getElementById("mLogin").addEventListener("keydown", e => {
   if (e.key === "Enter") entrar();
 });
+/* fase 4: trocar o ano no seletor do painel recarrega os campos do formulário */
+document.getElementById("cfgAnoSel").addEventListener("change", trocarAnoEdicao);
 /* ============================ cabeçalho em PNG ============================
    Tenta os caminhos de CONFIG.imgCabecalho em ordem; o primeiro que carregar
    substitui o banner textual. Ao carregar, recalcula a escala da folha —
