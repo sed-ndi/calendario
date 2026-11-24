@@ -104,9 +104,14 @@ td.t{background:#ffff66;font-weight:bold}
 .leg i{width:5mm;height:3mm;flex:none;border:0.2mm solid rgba(0,0,0,.4);border-radius:0.4mm}
 .leg li.expl{display:block;font-size:5.9pt;color:#333;line-height:1.3;column-span:all;margin-top:0.6mm;border-top:0.2mm solid #ddd;padding-top:0.8mm}
 .leg .fdem{display:inline-block;width:8mm;height:3.6mm;border:0.2mm solid rgba(0,0,0,.4);vertical-align:middle;margin-right:1.6mm}
-.chk{margin:1.6mm 3mm 0;font-size:7.6pt;font-weight:bold;padding:0.9mm 2mm;border:0.35mm solid;text-align:center}
+/* A conferência de dias letivos é ferramenta interna do editor: fica oculta
+   para o público e só aparece na tela com sessão admin ativa (body.adm).
+   Na impressão fica sempre de fora — a folha impressa é o material público. */
+.chk{display:none;margin:1.6mm 3mm 0;font-size:7.6pt;font-weight:bold;padding:0.9mm 2mm;border:0.35mm solid;text-align:center}
+body.adm .chk{display:block}
 .chk.ok{color:#176d2a;background:#eaf6ea;border-color:#176d2a}
 .chk.bad{color:#b00020;background:#fdecec;border-color:#b00020}
+@media print{.chk{display:none!important}}
 
 /* ---------- login e editor de eventos (fase 2 — só aparecem na tela) ---------- */
 .modal{position:fixed;inset:0;background:rgba(10,20,30,.5);display:flex;align-items:center;justify-content:center;z-index:60;padding:12px}
@@ -173,7 +178,7 @@ body.adm #lusuario{display:flex}
     <li><code>letivo</code>: vazio = sim; <code>n</code> = não é dia letivo.</li>
   </ul>
   <p>Dias com 2 ou mais eventos são desenhados com <b>faixas diagonais</b> que preenchem a célula inteira, uma faixa na cor de cada categoria — como na planilha manual, mas sem limite de cores e sem sobreposição de bordas. Dias com feriado, recesso, ponto facultativo ou início/término continuam com fundo cheio na cor dessas categorias: períodos de eventos não pintam esses dias (e períodos também não pintam sábado e domingo).</p>
-  <p>Feriado, ponto facultativo e recesso não contam como dias letivos (a conferência do rodapé considera isso).</p>
+  <p>Feriado, ponto facultativo e recesso não contam como dias letivos (a conferência do rodapé considera isso). O aviso "Dias letivos conferem" é ferramenta de conferência interna: só aparece na tela para quem está logado como admin — o público e a folha impressa nunca o veem.</p>
   <h3>Imprimir em 1 página A3 retrato</h3>
   <p>Ctrl+P &gt; papel <b>A3</b> &gt; orientação <b>Retrato</b> &gt; margens <b>Padrão</b> &gt; marque <b>Gráficos de fundo</b> e desmarque <b>Cabeçalhos e rodapés</b>. Se o conteúdo exceder 1 página, ele é reduzido automaticamente (um aviso aparece na barra acima).</p>
   <h3>Cabeçalho oficial (imagem)</h3>
@@ -257,7 +262,7 @@ const CONFIG = {
      e key = chave "anon public" (é pública por design; a segurança de
      escrita é garantida pelas políticas RLS criadas no script SQL).
      Enquanto estiver vazio, a página usa os dados de exemplo embutidos. */
-  supabase: { url: "https://jgxabbwyomoablbsbubn.supabase.co", key: "sb_publishable__TfexKHMBWmC0ukdPUGmMg_kOoaMAiq" },
+  supabase: { url: "", key: "" },
   /* Cabeçalho oficial em PNG (1480×360). O 1º caminho é relativo e funciona
      no GitHub Pages com a pasta image/ do repositório; o 2º é o link direto
      do arquivo no GitHub, usado como reserva quando o arquivo é aberto
@@ -545,7 +550,12 @@ function celula(v, m){
     const l = cls.includes("multi") ? cats.reduce((s,c) => s + lum(CATS[c][1]), 0) / cats.length : lum(bg);
     corTxt = l < 0.46 ? "#fff" : "#111";
   }
-  const tip = evs.length ? esc(`${p2(dia)}/${p2(m+1)}/${CONFIG.ano}\n` + evs.map(e =>
+  /* Tooltip: em dia pintado por categoria forte (feriado, recesso, ponto
+     facultativo, início/término), os eventos comuns não aparecem — o período
+     não está acontecendo nesse dia (é feriado/facultativo) e a célula não é
+     pintada por ele. Mostram-se só os eventos fortes que marcam o dia. */
+  const noDia = forte ? evs.filter(e => FORTES.includes(e.cat)) : evs;
+  const tip = noDia.length ? esc(`${p2(dia)}/${p2(m+1)}/${CONFIG.ano}\n` + noDia.map(e =>
     `- ${e.titulo} [${CATS[e.cat][0]}${e.etapa === "ambos" ? "" : e.etapa === "EI" ? " - E.I." : " - E.F."}${e.letivo ? "" : " - não letivo"}]`).join("\n")) : "";
   return `<div class="${cls}" data-dia="${v}"${bg ? ` style="background:${bg}"` : ""} title="${tip}"><span class="n"${corTxt ? ` style="color:${corTxt}"` : ""}>${dia}</span></div>`;
 }
